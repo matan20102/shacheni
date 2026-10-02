@@ -1,0 +1,13 @@
+﻿# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# secrets (never commit)
+.env
+.env.*
+*.pem
+*.p12
+*.jks
+key.properties

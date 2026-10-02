@@ -1,0 +1,1122 @@
+{
+  "@@locale": "he",
+  "appName": "שכני",
+  "cancel": "ביטול",
+  "confirm": "אישור",
+  "save": "שמירה",
+  "continueLabel": "המשך",
+  "back": "חזרה",
+  "close": "סגירה",
+  "done": "סיום",
+  "retry": "נסו שוב",
+  "seeAll": "הכול",
+  "send": "שליחה",
+  "submit": "שליחה",
+  "edit": "עריכה",
+  "yes": "כן",
+  "no": "לא",
+  "optional": "אופציונלי",
+  "today": "היום",
+  "tomorrow": "מחר",
+  "now": "עכשיו",
+  "free": "חינם",
+  "accept": "אישור",
+  "decline": "דחייה",
+  "approve": "אישור",
+  "reject": "דחייה",
+  "loadError": "לא הצלחנו לטעון",
+  "copy": "העתקה",
+  "copied": "הועתק",
+  "call": "התקשרות",
+  "whatsapp": "וואטסאפ",
+  "youLabel": "אתם",
+  "verifiedResident": "תושב/ת מאומת/ת של {building}",
+  "@verifiedResident": {
+    "placeholders": {
+      "building": {
+        "type": "String"
+      }
+    }
+  },
+  "newNeighbor": "שכן/ה חדש/ה",
+  "completedCount": "{n} עסקאות הושלמו",
+  "@completedCount": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "memberSince": "חבר/ה מאז {year}",
+  "@memberSince": {
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "inHM": "בעוד {h} שע׳ {m} דק׳",
+  "@inHM": {
+    "placeholders": {
+      "h": {
+        "type": "String"
+      },
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "inM": "בעוד {m} דק׳",
+  "@inM": {
+    "placeholders": {
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "overdue": "עבר הזמן",
+  "untilTime": "עד {time}",
+  "@untilTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "dayAtTime": "{day}, {time}",
+  "@dayAtTime": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "windowSame": "{day} · {from}–{to}",
+  "@windowSame": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "windowDiff": "{from} – {to}",
+  "@windowDiff": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "priceShekel": "₪{amount}",
+  "@priceShekel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "navHome": "בית",
+  "navParking": "חניה",
+  "navPackages": "חבילות",
+  "navMe": "אני",
+  "notificationsTooltip": "התראות",
+  "paymentNotice": "התשלום מתבצע ישירות בין השכנים (מזומן, ביט, פייבוקס…). האפליקציה לא מעבדת ולא מחזיקה כסף.",
+  "demoBadge": "הדגמה",
+  "demoNote": "זהו אב־טיפוס עם נתוני דוגמה. שום דבר לא נשמר בשרת.",
+  "statusCompleted": "הושלם",
+  "statusCancelled": "בוטל",
+  "statusExpired": "פג תוקף",
+  "statusDeclined": "נדחה",
+  "statusActive": "פעיל",
+  "statusAvailable": "פנויה",
+  "statusReserved": "שמורה",
+  "welcomeTitle": "חניה, עזרה הדדית, והכול בבניין שלכם",
+  "welcomeBullet1": "שתפו חניה פנויה עם השכנים",
+  "welcomeBullet2": "בקשו או הציעו איסוף חבילה",
+  "welcomeBullet3": "רק תושבים מאומתים. הפרטיות שלכם קודם.",
+  "getStarted": "התחלה",
+  "skipToDemo": "דלגו להדגמה (ללא הרשמה)",
+  "phoneTitle": "מה מספר הטלפון שלכם?",
+  "phoneSubtitle": "נשלח אליכם קוד אימות ב־SMS",
+  "sendCode": "שלחו קוד",
+  "phoneInvalid": "מספר הטלפון לא תקין",
+  "otpTitle": "הקלידו את הקוד",
+  "otpSubtitle": "שלחנו קוד אל {phone}",
+  "@otpSubtitle": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "otpChange": "החלפת מספר",
+  "otpResend": "שליחה חוזרת",
+  "otpResendIn": "שליחה חוזרת בעוד {s} שנ׳",
+  "@otpResendIn": {
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "verify": "אימות",
+  "otpDemoHint": "בהדגמה כל קוד עובד (למשל 123456)",
+  "legalTitle": "לפני שממשיכים",
+  "legalSubtitle": "קראו ואשרו את המסמכים הבאים",
+  "termsOfService": "תנאי שימוש",
+  "privacyPolicy": "מדיניות פרטיות",
+  "communityRules": "כללי הקהילה",
+  "residentDeclaration": "הצהרת תושב",
+  "buildingAgreement": "הסכם בניין",
+  "legalVersion": "גרסה {version}",
+  "@legalVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "legalRead": "קריאה",
+  "legalAccept": "קראתי ואני מאשר/ת",
+  "legalPlaceholderNote": "מסמך זמני: הנוסח המשפטי המלא יפורסם על ידי בעל האפליקציה.",
+  "legalAcceptContinue": "אישור והמשך",
+  "joinTitle": "באיזה בניין אתם גרים?",
+  "joinSubtitle": "הקלידו את קוד הבניין שקיבלתם מהמנהל",
+  "joinCodeLabel": "קוד בניין",
+  "joinFind": "חיפוש בניין",
+  "joinFound": "מצאנו את הבניין:",
+  "joinConfirm": "כן, זה הבניין שלי",
+  "joinInvalid": "הקוד לא תקין",
+  "joinDemoHint": "קוד להדגמה: {code}",
+  "@joinDemoHint": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "applyTitle": "בקשת הצטרפות",
+  "applySubtitle": "מנהל הבניין יאמת שאתם גרים כאן",
+  "fullName": "שם מלא",
+  "apartment": "דירה",
+  "apartmentPick": "בחרו דירה",
+  "parkingSpaces": "חניות",
+  "parkingOptionalHint": "אם יש לכם חניה פרטית, בחרו אותה מהרשימה",
+  "noParking": "אין לי חניה פרטית",
+  "declarationsTitle": "הצהרות",
+  "decl1": "המידע שמסרתי נכון",
+  "decl2": "אני תושב/ת הבניין",
+  "decl3": "פרטי הדירה נכונים",
+  "decl4": "פרטי החניה נכונים",
+  "decl5": "הבנתי את כללי הקהילה",
+  "submitRequest": "שליחת בקשה",
+  "optionalPhoto": "תמונת פרופיל (אופציונלי)",
+  "fieldRequired": "שדה חובה",
+  "pendingTitle": "מאמתים שאתם גרים ב{building}",
+  "@pendingTitle": {
+    "placeholders": {
+      "building": {
+        "type": "String"
+      }
+    }
+  },
+  "pendingBody": "בדרך כלל זה לוקח עד יום. נשלח התראה כשתאושרו.",
+  "pendingSummary": "הפרטים ששלחתם",
+  "pendingDemoApprove": "הדגמה: אשרו אותי כמנהל",
+  "withdrawRequest": "ביטול הבקשה",
+  "logOut": "התנתקות",
+  "homeGreeting": "שלום {name} 👋",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeQuestion": "מה אפשר לעשות בבניין עכשיו?",
+  "qaFindParking": "מצאו חניה",
+  "qaShareParking": "שתפו את החניה שלי",
+  "qaRequestPickup": "בקשו איסוף חבילה",
+  "qaHelp": "עזרו לשכן",
+  "needsAction": "דורש את תשומת ליבכם",
+  "happeningSoon": "בקרוב",
+  "parkingNow": "חניות פנויות",
+  "pickupNeighbors": "שכנים שצריכים איסוף",
+  "nothingYet": "עוד אין פעילות בבניין",
+  "beFirst": "היו הראשונים לשתף חניה או לבקש עזרה",
+  "actRespondRequest": "{name} ביקש/ה את חניה {space}",
+  "@actRespondRequest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "space": {
+        "type": "String"
+      }
+    }
+  },
+  "actConfirmReservation": "אשרו את ההזמנה של חניה {space}",
+  "@actConfirmReservation": {
+    "placeholders": {
+      "space": {
+        "type": "String"
+      }
+    }
+  },
+  "actShowCode": "הראו לשכן את קוד המסירה",
+  "actHelperArrived": "{name} הגיע/ה עם החבילה",
+  "@actHelperArrived": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "actViewPhoto": "החבילה הושארה ליד הדלת — צפו בתמונה",
+  "actPayPay": "סמנו ששילמתם ₪{amount} ל{name}",
+  "@actPayPay": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "actPayReceived": "{name} אומר/ת ששילם/ה ₪{amount}",
+  "@actPayReceived": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "actRate": "דרגו את {name}",
+  "@actRate": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "actOfferReceived": "{name} הציע/ה לאסוף את החבילה",
+  "@actOfferReceived": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "actHelperJob": "איסוף עבור {name}",
+  "@actHelperJob": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "soonReservation": "חניה {space} · {window}",
+  "@soonReservation": {
+    "placeholders": {
+      "space": {
+        "type": "String"
+      },
+      "window": {
+        "type": "String"
+      }
+    }
+  },
+  "soonJob": "איסוף: {place}",
+  "@soonJob": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "parkingTitle": "חניה",
+  "segFind": "חיפוש",
+  "segMine": "שלי",
+  "segSharing": "שיתוף",
+  "segRenting": "שכירות",
+  "whenNeedParking": "מתי צריך חניה?",
+  "presetTonight": "הערב",
+  "presetTomorrow": "מחר",
+  "presetWeek": "השבוע",
+  "fromLabel": "מ־",
+  "toLabel": "עד",
+  "showAllUpcoming": "הצגת כל הקרובות",
+  "coversYourTime": "מכסה את הזמן שלכם",
+  "instantBadge": "הזמנה מיידית",
+  "approvalBadge": "באישור בעל החניה",
+  "noSpacesTitle": "אין חניות פנויות בזמנים האלה",
+  "noSpacesMsg": "נסו להרחיב את הטווח או להציג את כל הקרובות",
+  "parkingLabel": "חניה {space}",
+  "@parkingLabel": {
+    "placeholders": {
+      "space": {
+        "type": "String"
+      }
+    }
+  },
+  "listingDetailTitle": "פרטי החניה",
+  "requestAction": "שליחת בקשה",
+  "reserveNow": "הזמינו עכשיו",
+  "ownListing": "זו החניה שלכם",
+  "offeredBy": "מוצעת על ידי",
+  "whenLabel": "מתי",
+  "priceLabel": "מחיר",
+  "descriptionLabel": "תיאור",
+  "reviewTitle": "סקירה ושליחה",
+  "vehiclePlate": "מספר רכב (אופציונלי)",
+  "noteToOwner": "הערה לבעל החניה",
+  "sendRequest": "שליחת בקשה",
+  "requestSentSnack": "הבקשה נשלחה לבעל החניה",
+  "reservedSnack": "החניה הוזמנה",
+  "slotTaken": "מישהו הקדים אתכם והחניה כבר נתפסה",
+  "publishTitle": "שיתוף חניה",
+  "chooseSpace": "בחרו חניה",
+  "startsLabel": "מתחילה",
+  "endsLabel": "מסתיימת",
+  "priceInput": "מחיר (₪)",
+  "descriptionOptional": "תיאור (אופציונלי)",
+  "approveEach": "אני מאשר/ת כל בקשה",
+  "approveEachHint": "כשהאפשרות כבויה — ההזמנה מיידית",
+  "publish": "פרסום",
+  "publishedSnack": "החניה פורסמה",
+  "noAssignmentTitle": "אין חניה משויכת אליכם",
+  "noAssignmentMsg": "כדי לשתף חניה, בקשו שיוך חניה והמנהל יאמת אותה",
+  "requestAssignmentBtn": "בקשת שיוך חניה",
+  "overlapError": "כבר פרסמתם את החניה הזו בזמן הזה",
+  "invalidWindow": "זמן הסיום חייב להיות אחרי ההתחלה",
+  "needsResponse": "ממתין לתגובה",
+  "upcoming": "קרוב",
+  "past": "עבר",
+  "emptySharing": "עוד לא שיתפתם חניה",
+  "emptyRenting": "אין לכם הזמנות חניה",
+  "requestsTitle": "בקשות",
+  "noRequestsYet": "עדיין אין בקשות. החניה שלכם גלויה לשכנים.",
+  "cancelAvailability": "ביטול הזמינות",
+  "cancelAvailabilityBody": "בקשות שממתינות יידחו והשכנים יקבלו הודעה.",
+  "acceptWarn": "אישור בקשה ידחה את שאר הבקשות לאותו זמן.",
+  "resRequested": "ממתין לאישור",
+  "resAccepted": "אושר — נדרש אישור סופי",
+  "resConfirmed": "הוזמן",
+  "resActive": "פעיל",
+  "resCompleted": "הסתיים",
+  "stepRequested": "בקשה",
+  "stepAccepted": "אושר",
+  "stepConfirmed": "הוזמן",
+  "stepActive": "פעיל",
+  "stepEnded": "הסתיים",
+  "reservationTitle": "פרטי הזמנה",
+  "confirmReservation": "אישור הזמנה",
+  "confirmBy": "יש לאשר עד {time}",
+  "@confirmBy": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmSheetBody": "התשלום מתבצע ישירות בינכם ל{name}. האפליקציה לא מעבדת ולא מחזיקה כסף.",
+  "@confirmSheetBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "contactAfter": "פרטי הקשר יופיעו אחרי אישור סופי",
+  "vehicleLabel": "רכב",
+  "noteLabel": "הערה",
+  "demoAcceptReq": "הדגמה: {name} מאשר/ת את הבקשה",
+  "@demoAcceptReq": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "demoEndBooking": "הדגמה: זמן ההזמנה הסתיים",
+  "mySpacesTitle": "החניות שלי",
+  "assignActive": "מאומתת",
+  "assignRequested": "ממתינה לאימות",
+  "assignRejected": "נדחתה",
+  "assignEnded": "הסתיימה",
+  "withdrawRequestShort": "ביטול בקשה",
+  "noSpacesLinked": "אין חניות משויכות אליכם",
+  "requestAssignTitle": "בקשת שיוך חניה",
+  "assignHint": "המנהל יוודא שהחניה באמת שלכם לפני ששייך אותה אליכם.",
+  "pickSpace": "בחרו חניה מהרשימה",
+  "sendAssignRequest": "שליחת בקשה למנהל",
+  "assignSentSnack": "הבקשה נשלחה למנהל",
+  "cancelBookingTitle": "ביטול הזמנה",
+  "pkgTitle": "חבילות",
+  "segHelp": "עזרה",
+  "segMyRequests": "הבקשות שלי",
+  "segMyOffers": "ההצעות שלי",
+  "filterToday": "היום",
+  "filterReward": "תגמול גבוה",
+  "rewardLabel": "תגמול",
+  "doorOkBadge": "אפשר להשאיר ליד הדלת",
+  "noRequestsTitle": "אף אחד לא צריך איסוף כרגע 🎉",
+  "noRequestsMsg": "יש לכם משהו לאסוף? בקשו משכן.",
+  "newPickupTitle": "בקשת איסוף חבילה",
+  "pickupLocation": "מיקום האיסוף",
+  "pickupLocationHint": "למשל: קניון עזריאלי",
+  "pkgDescription": "תיאור החבילה",
+  "pkgDescriptionHint": "קופסה קטנה, כ־1 ק״ג",
+  "deadlineLabel": "עד מתי",
+  "rewardChoose": "תגמול",
+  "notesLabel": "הערות",
+  "pickupRef": "מספר הזמנה / קוד איסוף",
+  "pickupRefHint": "פרטי — יישלח רק לשכן שתבחרו",
+  "handoffPlace": "מקום המסירה",
+  "defaultLobby": "לובי הבניין",
+  "doorToggle": "אפשר להשאיר את החבילה ליד דלת הדירה",
+  "doorToggleHint": "השכן חייב לשלוח לכם תמונה כהוכחה",
+  "ackProhibited": "אין בחבילה פריטים אסורים (מזומן, מסמכים מזהים, תרופות…)",
+  "ackThirdParty": "נקודת האיסוף מאפשרת לאסוף עבורי",
+  "postRequest": "פרסום הבקשה",
+  "postedSnack": "הבקשה פורסמה",
+  "deadlineTooSoon": "הדד־ליין חייב להיות לפחות 30 דקות קדימה",
+  "offerToPickup": "אני אאסוף",
+  "withdrawOffer": "ביטול ההצעה",
+  "offerSheetTitle": "הצעת איסוף",
+  "plannedTime": "מתי תגיעו לשם? (אופציונלי)",
+  "messageOptional": "הודעה (אופציונלי)",
+  "sendOffer": "שליחת הצעה",
+  "offerSentSnack": "ההצעה נשלחה",
+  "offerPending": "ההצעה שלכם נשלחה וממתינה לאישור",
+  "hiddenDetails": "מספר הדירה ופרטי האיסוף יופיעו אחרי שההצעה שלכם תאושר.",
+  "reqOpen": "פתוחה",
+  "reqOffers": "התקבלו הצעות",
+  "reqAccepted": "ההצעה אושרה",
+  "reqCollected": "נאסף",
+  "reqDelivered": "נמסר",
+  "reqCompleted": "הושלם",
+  "reqCancelled": "בוטל",
+  "reqExpired": "פג תוקף",
+  "reqDisputed": "בבדיקה",
+  "stOpen": "פתוח",
+  "stOffers": "הצעות",
+  "stAccepted": "אושר",
+  "stCollected": "נאסף",
+  "stDelivered": "נמסר",
+  "stCompleted": "הושלם",
+  "offersTitle": "הצעות",
+  "noOffersYet": "השכנים קיבלו הודעה. נעדכן כשמישהו יציע לאסוף.",
+  "offerAt": "יגיע בסביבות {time}",
+  "@offerAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "yourHelper": "השכן/ה שאוסף/ת",
+  "codePanelTitle": "קוד המסירה שלכם",
+  "codeHint": "אמרו את הקוד רק כשהחבילה בידיכם",
+  "regenerateCode": "יצירת קוד חדש",
+  "regenLeft": "נותרו {n}",
+  "@regenLeft": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "allowDoor": "אפשרו להשאיר ליד הדלת",
+  "doorAllowedNote": "מאושר — השכן יצרף תמונה כהוכחה",
+  "arrivalBanner": "{name} הגיע/ה עם החבילה",
+  "@arrivalBanner": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deliveryPhoto": "תמונת מסירה",
+  "photoTakenAt": "צולם {time} על ידי {name}",
+  "@photoTakenAt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmReceived": "אישור קבלה",
+  "reportProblem": "דיווח על בעיה",
+  "autoConfirmNote": "ללא תגובה, יאושר אוטומטית בעוד {time}",
+  "@autoConfirmNote": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelRequestBtn": "ביטול הבקשה",
+  "jobTitle": "משימת איסוף",
+  "pickupBlock": "איסוף",
+  "deliverTo": "מסירה",
+  "apartmentLabel": "דירה {apt}",
+  "@apartmentLabel": {
+    "placeholders": {
+      "apt": {
+        "type": "String"
+      }
+    }
+  },
+  "pickupRefLabel": "מספר איסוף",
+  "iPickedUp": "אספתי את החבילה",
+  "imHere": "הגעתי",
+  "arrivalSent": "הודענו ל{name} שהגעתם",
+  "@arrivalSent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "enterCode": "הזנת קוד מסירה",
+  "cantHandOver": "לא מצליחים למסור?",
+  "withdrawJob": "ביטול המשימה",
+  "codeEntryTitle": "קוד מסירה",
+  "codeEntryHint": "בקשו מ{name} את הקוד בן 4 הספרות",
+  "@codeEntryHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmDelivery": "אישור מסירה",
+  "wrongCode": "הקוד לא תואם. נותרו {n} ניסיונות.",
+  "@wrongCode": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "lockedCode": "יותר מדי ניסיונות. נסו שוב בעוד {time}.",
+  "@lockedCode": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "deliveredTitle": "נמסר! 🎉",
+  "deliveredBody": "המסירה אושרה. עכשיו נשאר להסדיר את התשלום.",
+  "methodsTitle": "איך מוסרים?",
+  "methodPhone": "קבלו את הקוד בטלפון",
+  "methodPhoneHint": "המבקש מקריא לכם את הקוד גם אם הוא לא בבית",
+  "methodDoor": "השאירו ליד דלת הדירה",
+  "methodDoorHint": "דורש אישור של המבקש ותמונת הוכחה",
+  "askAllow": "בקשו מ{name} לאשר",
+  "@askAllow": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "allowAsked": "ביקשנו מ{name} לאשר מסירה ליד הדלת",
+  "@allowAsked": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "methodUnreachable": "אי אפשר ליצור קשר",
+  "methodUnreachableHint": "החבילה נשארת אצלכם והמקרה עובר לבדיקה",
+  "allowSheetTitle": "השכן כאן עם החבילה",
+  "allowSheetBody": "אפשר לרדת לקבל, להקריא את הקוד, או לאשר להשאיר את החבילה ליד הדלת. תקבלו תמונה כהוכחה.",
+  "showMyCode": "הציגו את הקוד שלי",
+  "allowLeaving": "אפשרו להשאיר ליד הדלת",
+  "illComeDown": "אני יורד/ת",
+  "doorPhotoTitle": "מסירה ליד הדלת",
+  "doorPhotoGuide": "צלמו את החבילה ליד הדלת. הימנעו מצילום אנשים ודלתות של שכנים אחרים.",
+  "takePhoto": "צילום",
+  "retake": "צילום מחדש",
+  "submitDelivery": "שליחת המסירה",
+  "doorPhotoSuccess": "נמסר — הבקשה עודכנה",
+  "cameraDemoHint": "בהדגמה מוצגת תמונת דוגמה במקום מצלמה",
+  "photoViewerTitle": "תמונת מסירה",
+  "photoSample": "תמונה לדוגמה",
+  "photoMeta": "צולם {time} · הועלה על ידי {name}",
+  "@photoMeta": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "photoNote": "הערת השליח: {note}",
+  "@photoNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "photoRetention": "התמונה נשמרת 30 ימים",
+  "demoOffer": "הדגמה: שכן מציע לאסוף",
+  "demoCollected": "הדגמה: השכן אסף את החבילה",
+  "demoArrival": "הדגמה: השכן הגיע עם החבילה",
+  "demoDoorDelivery": "הדגמה: השכן השאיר ליד הדלת עם תמונה",
+  "payTitle": "תשלום",
+  "iPaid": "אני שילמתי",
+  "waitingConfirm": "ממתינים ש{name} יאשר/תאשר",
+  "@waitingConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "waitingPay": "ממתינים ש{name} ישלם/תשלם",
+  "@waitingPay": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "saidPaid": "{name} אומר/ת ששילם/ה ₪{amount}",
+  "@saidPaid": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentReceived": "התשלום התקבל",
+  "notReceived": "לא התקבל",
+  "noPaymentNeeded": "אין צורך בתשלום",
+  "settledLabel": "התשלום הושלם",
+  "paymentCancelled": "התשלום בוטל",
+  "youPayTo": "אתם משלמים ₪{amount} ל{name}",
+  "@youPayTo": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "youReceiveFrom": "אתם מקבלים ₪{amount} מ{name}",
+  "@youReceiveFrom": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "payPending": "ממתין לתשלום",
+  "payConfirmed": "סומן כשולם",
+  "paySettled": "שולם",
+  "payCancelled": "בוטל",
+  "demoPayerPaid": "הדגמה: {name} מסמן/ת ששילם/ה",
+  "@demoPayerPaid": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "demoPayeeConfirm": "הדגמה: {name} מאשר/ת קבלת תשלום",
+  "@demoPayeeConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "txDetailTitle": "פרטי עסקה",
+  "txInProgress": "בתהליך",
+  "txAwaiting": "ממתינה לאישור תשלום",
+  "txCompleted": "הושלמה",
+  "txCancelled": "בוטלה",
+  "txDisputed": "בבדיקה",
+  "youPaid": "שילמתם",
+  "youReceived": "קיבלתם",
+  "refundRecord": "נוצרה רשומת החזר נפרדת",
+  "paymentTimeline": "ציר תשלום",
+  "counterparty": "הצד השני",
+  "txTypeParking": "חניה",
+  "txTypePickup": "איסוף חבילה",
+  "historyTitle": "היסטוריה",
+  "filterAll": "הכול",
+  "filterParking": "חניה",
+  "filterPickups": "איסופים",
+  "filterPaid": "שילמתי",
+  "filterReceived": "קיבלתי",
+  "historyEmpty": "הפעילות שלכם תופיע כאן",
+  "historyTotals": "שילמתם ₪{paid} · קיבלתם ₪{earned}",
+  "@historyTotals": {
+    "placeholders": {
+      "earned": {
+        "type": "String"
+      },
+      "paid": {
+        "type": "String"
+      }
+    }
+  },
+  "rateTitle": "דרגו את {name}",
+  "@rateTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "rateComment": "הוסיפו תגובה (אופציונלי)",
+  "notNow": "לא עכשיו",
+  "rateThanks": "תודה על הדירוג",
+  "rateHidden": "הדירוגים מופיעים כששני הצדדים דירגו, או אחרי 14 ימים",
+  "rateButton": "דירוג",
+  "alreadyRated": "כבר דירגתם",
+  "cancelTitle": "ביטול",
+  "consequences": "מה יקרה:",
+  "consOther": "הצד השני יקבל הודעה",
+  "consRefund": "אם כבר שולם — תיווצר רשומת החזר נפרדת",
+  "consCounter": "הביטול נספר בדירוג האמינות שלכם",
+  "confirmCancel": "אישור ביטול",
+  "keepIt": "להשאיר",
+  "cancelledSnack": "בוטל",
+  "reportTitle": "דיווח על בעיה",
+  "reportReason": "סיבה",
+  "rSpaceOccupied": "החניה הייתה תפוסה",
+  "rNotDelivered": "החבילה לא נמסרה",
+  "rPaymentNotReceived": "התשלום לא התקבל",
+  "rUnreachable": "אי אפשר ליצור קשר עם המבקש",
+  "rOther": "אחר",
+  "reportDesc": "מה קרה?",
+  "reportNote": "מנהל הבניין יבדוק תוך 48 שעות, והפעולות האוטומטיות מושהות.",
+  "submitReport": "שליחת הדיווח",
+  "reportSent": "הדיווח נשלח",
+  "profileTitle": "פרופיל שכן",
+  "reviewsTitle": "ביקורות",
+  "noReviews": "עדיין אין ביקורות",
+  "privateInfoNote": "מספר דירה וטלפון לא מוצגים לשכנים",
+  "notificationsTitle": "התראות",
+  "markAllRead": "סימון הכול כנקרא",
+  "allCaughtUp": "הכול מעודכן 🎉",
+  "nParkingRequest": "{name} ביקש/ה את חניה {space}",
+  "@nParkingRequest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "space": {
+        "type": "String"
+      }
+    }
+  },
+  "nParkingAccepted": "{name} אישר/ה — אשרו סופית כדי להזמין",
+  "@nParkingAccepted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nOfferReceived": "{name} הציע/ה לאסוף את החבילה שלכם",
+  "@nOfferReceived": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nCollected": "{name} אסף/ה את החבילה",
+  "@nCollected": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nArrived": "{name} הגיע/ה עם החבילה",
+  "@nArrived": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nDoorDelivered": "החבילה הושארה ליד הדלת — יש תמונה",
+  "nMarkedPaid": "{name} סימן/ה ששילם/ה",
+  "@nMarkedPaid": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nRatingRequested": "דרגו את {name}",
+  "@nRatingRequested": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nApproved": "אושרתם כתושבי הבניין!",
+  "agoMinutes": "לפני {m} דק׳",
+  "@agoMinutes": {
+    "placeholders": {
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "agoHours": "לפני {h} שע׳",
+  "@agoHours": {
+    "placeholders": {
+      "h": {
+        "type": "String"
+      }
+    }
+  },
+  "agoDays": "לפני {d} ימים",
+  "@agoDays": {
+    "placeholders": {
+      "d": {
+        "type": "String"
+      }
+    }
+  },
+  "meTitle": "אני",
+  "apartmentIn": "דירה {apt} · {building}",
+  "@apartmentIn": {
+    "placeholders": {
+      "apt": {
+        "type": "String"
+      },
+      "building": {
+        "type": "String"
+      }
+    }
+  },
+  "editProfile": "עריכת פרופיל",
+  "settingsTitle": "הגדרות",
+  "helpLabel": "עזרה ויצירת קשר",
+  "adminArea": "ניהול הבניין",
+  "platformArea": "ניהול פלטפורמה",
+  "languageLabel": "שפה",
+  "hebrew": "עברית",
+  "english": "English",
+  "notifSettings": "התראות",
+  "notifNewPickup": "בקשות איסוף חדשות",
+  "notifNewParking": "חניות חדשות",
+  "alwaysOn": "התראות על עסקאות פעילות תמיד",
+  "legalDocs": "מסמכים משפטיים",
+  "appVersion": "גרסה",
+  "deleteAccount": "מחיקת חשבון",
+  "deleteBlocked": "אי אפשר למחוק חשבון כשיש עסקאות פעילות",
+  "showDemoTools": "הצגת כפתורי הדגמה",
+  "demoSection": "הדגמה",
+  "resetDemo": "איפוס נתוני ההדגמה",
+  "profileEditNote": "שינוי דירה שולח בקשת הצטרפות חדשה לאישור המנהל.",
+  "adminTitle": "ניהול הבניין",
+  "adminHello": "שלום, מנהל/ת הבניין",
+  "adminPendingApps": "בקשות הצטרפות",
+  "adminParkingRequests": "בקשות שיוך חניה",
+  "adminDisputes": "מחלוקות",
+  "adminActivity": "פעילות בבניין",
+  "adminStats": "סטטיסטיקה",
+  "adminSettings": "הגדרות בניין",
+  "adminResidents": "דיירים",
+  "adminApartments": "דירות",
+  "adminSpaces": "חניות",
+  "selfReviewBanner": "כמנהל/ת היחיד/ה אפשר לאשר את עצמכם. הפעולה מסומנת ביומן הביקורת.",
+  "applicationsTitle": "בקשות הצטרפות",
+  "tabPending": "ממתינות",
+  "tabDecided": "טופלו",
+  "noPending": "אף אחד לא ממתין 🎉",
+  "reviewTitle2": "בדיקת בקשה",
+  "nameLabel": "שם",
+  "phoneLabel": "טלפון",
+  "requestedParking": "חניות מבוקשות",
+  "flagSecondResident": "דייר/ת נוסף/ת באותה דירה",
+  "flagHeldByOther": "החניה משויכת כרגע למישהו אחר",
+  "flagOwn": "זו הבקשה שלכם",
+  "approveApplication": "אישור הבקשה",
+  "rejectApplication": "דחיית הבקשה",
+  "requestInfo": "בקשת מידע נוסף",
+  "alsoApproveParking": "לאשר גם את החניה {space}",
+  "@alsoApproveParking": {
+    "placeholders": {
+      "space": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationApproved": "הבקשה אושרה",
+  "applicationRejected": "הבקשה נדחתה",
+  "infoRequested": "נשלחה בקשה למידע נוסף",
+  "submittedAgo": "נשלחה {when}",
+  "@submittedAgo": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentsTitle": "שיוך חניות",
+  "tabRequests": "בקשות",
+  "tabActive": "פעילות",
+  "heldByOther": "משויכת כרגע לאחר",
+  "endAssignment": "סיום שיוך",
+  "assignmentApproved": "השיוך אושר",
+  "assignmentRejected": "השיוך נדחה",
+  "residentLabel": "תושב/ת",
+  "disputesTitle": "מחלוקות",
+  "noDisputes": "אין מחלוקות 🎉",
+  "resolve": "סגירת מחלוקת",
+  "serviceDelivered": "האם השירות ניתן?",
+  "resolutionNote": "הערה (חובה)",
+  "resolvedChip": "נסגרה",
+  "openChip": "פתוחה",
+  "youArePartyNote": "אתם צד במחלוקת הזו. הסגירה מסומנת ביומן.",
+  "statsTitle": "סטטיסטיקה",
+  "statApartments": "דירות",
+  "statResidents": "תושבים מאושרים",
+  "statActiveWeek": "פעילים השבוע",
+  "statListings": "חניות שפורסמו",
+  "statReservations": "הזמנות חניה",
+  "statRequests": "בקשות איסוף",
+  "statDoneParking": "עסקאות חניה שהושלמו",
+  "statDonePickup": "איסופים שהושלמו",
+  "statCompletion": "שיעור השלמה",
+  "statRating": "דירוג ממוצע",
+  "activityTitle": "פעילות בבניין",
+  "tabListings": "חניות",
+  "tabPackages": "חבילות",
+  "tabTransactions": "עסקאות",
+  "joinCodeTitle": "קוד הצטרפות",
+  "joinCodeHint": "שתפו את הקוד עם השכנים. הקוד רק מזהה את הבניין — האישור שלכם הוא ההגנה.",
+  "rotateCode": "החלפת קוד",
+  "posterTitle": "כרזה להדפסה",
+  "posterBody": "סרקו או הקלידו את הקוד כדי להצטרף ל{building}",
+  "@posterBody": {
+    "placeholders": {
+      "building": {
+        "type": "String"
+      }
+    }
+  },
+  "selfReviewSwitch": "אישור עצמי של המנהל",
+  "selfReviewHint": "מאפשר לכם לאשר את הבקשות של עצמכם כל עוד אתם המנהל/ת היחיד/ה",
+  "buildingInfo": "פרטי הבניין",
+  "apartmentsCount": "{n} דירות",
+  "@apartmentsCount": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "spacesCount": "{n} חניות",
+  "@spacesCount": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "platformTitle": "ניהול פלטפורמה",
+  "buildingsTitle": "בניינים",
+  "createBuilding": "יצירת בניין",
+  "bDraft": "טיוטה",
+  "bActive": "פעיל",
+  "bSuspended": "מושעה",
+  "stepDetails": "פרטים",
+  "stepApartments": "דירות",
+  "stepParking": "חניות",
+  "stepReview": "סיכום",
+  "buildingName": "שם הבניין",
+  "buildingAddress": "כתובת מלאה",
+  "cityLabel": "עיר",
+  "apartmentCount": "מספר דירות",
+  "parkingCount": "מספר חניות",
+  "rangeGenerator": "יצירה לפי טווח",
+  "rangeApartmentsHint": "קומות 1–6, 4 דירות בקומה → 101…604",
+  "rangeParkingHint": "P01–P24",
+  "pasteList": "הדבקת רשימה",
+  "previewLabel": "תצוגה מקדימה",
+  "countMatch": "{have} מתוך {want} ✓",
+  "@countMatch": {
+    "placeholders": {
+      "have": {
+        "type": "String"
+      },
+      "want": {
+        "type": "String"
+      }
+    }
+  },
+  "checklistTitle": "רשימת בדיקה להפעלה",
+  "chkApartments": "רשימת דירות",
+  "chkSpaces": "רשימת חניות",
+  "chkCounts": "המספרים תואמים",
+  "chkAgreement": "הסכם בניין (נוסח זמני)",
+  "acceptActivate": "אישור ההסכם והפעלת הבניין",
+  "buildingActivated": "הבניין הופעל",
+  "suspend": "השעיה",
+  "reactivate": "הפעלה מחדש",
+  "noAdminAppointNote": "אתם מנהל/ת הבניין באופן אוטומטי. אין צורך למנות מנהלים.",
+  "demoAcceptOffer": "הדגמה: {name} מאשר/ת את ההצעה שלי",
+  "@demoAcceptOffer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "demoEnterCode": "הדגמה: השכן מזין את הקוד שלכם",
+  "demoConfirmReceived": "הדגמה: {name} מאשר/ת קבלה",
+  "@demoConfirmReceived": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
+}
