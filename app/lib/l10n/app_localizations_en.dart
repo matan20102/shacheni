@@ -1530,6 +1530,18 @@ class AppL10nEn extends AppL10n {
   String get resetDemo => 'Reset demo data';
 
   @override
+  String get serverStatus => 'Server';
+
+  @override
+  String get serverConnected => 'Connected to Supabase';
+
+  @override
+  String get serverNotConfigured => 'Not configured — demo data only';
+
+  @override
+  String get serverUnreachable => 'Can\'t reach the server';
+
+  @override
   String get profileEditNote =>
       'Changing your apartment submits a new request for admin approval.';
 

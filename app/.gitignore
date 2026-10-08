@@ -46,3 +46,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Per-environment config (Supabase URL/key) — copy config/example.json
+/config/*.json
+!/config/example.json

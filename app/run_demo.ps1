@@ -13,6 +13,7 @@ Set-Location $PSScriptRoot
 $defines = @()
 if ($SkipOnboarding) { $defines += '--dart-define=DEMO_SIGNED_IN=true' }
 if ($Locale) { $defines += "--dart-define=DEMO_LOCALE=$Locale" }
+if (Test-Path config\dev.json) { $defines += '--dart-define-from-file=config/dev.json' }  # Supabase dev project
 
 flutter build web --release --no-wasm-dry-run @defines --output=build\web_demo
 if ($LASTEXITCODE -ne 0) { Write-Error 'Build failed'; exit 1 }

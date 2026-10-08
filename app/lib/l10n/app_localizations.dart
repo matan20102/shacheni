@@ -2821,6 +2821,30 @@ abstract class AppL10n {
   /// **'איפוס נתוני ההדגמה'**
   String get resetDemo;
 
+  /// No description provided for @serverStatus.
+  ///
+  /// In he, this message translates to:
+  /// **'שרת'**
+  String get serverStatus;
+
+  /// No description provided for @serverConnected.
+  ///
+  /// In he, this message translates to:
+  /// **'מחובר ל-Supabase'**
+  String get serverConnected;
+
+  /// No description provided for @serverNotConfigured.
+  ///
+  /// In he, this message translates to:
+  /// **'לא מוגדר — נתוני הדגמה בלבד'**
+  String get serverNotConfigured;
+
+  /// No description provided for @serverUnreachable.
+  ///
+  /// In he, this message translates to:
+  /// **'אין חיבור לשרת'**
+  String get serverUnreachable;
+
   /// No description provided for @profileEditNote.
   ///
   /// In he, this message translates to:

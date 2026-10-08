@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/tokens.dart';
 import '../../core/format.dart';
 import '../../core/widgets.dart';
+import '../../data/backend.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 
@@ -134,6 +135,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final l = context.l10n;
     final locale = ref.watch(localeProvider);
     final demoTools = ref.watch(demoToolsProvider);
+    final backend = ref.watch(backendStatusProvider).value;
     final d = ref.watch(demoProvider).data;
     final active = d.myTxns.any((t) => t.status == TxStatus.inProgress || t.status == TxStatus.awaitingSettlement);
 
@@ -189,6 +191,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   value: demoTools,
                   onChanged: (v) => ref.read(demoToolsProvider.notifier).set(v),
                   title: Text(l.showDemoTools),
+                ),
+                ListTile(
+                  leading: Icon(switch (backend) {
+                    BackendStatus.connected => Icons.cloud_done_rounded,
+                    BackendStatus.unreachable => Icons.cloud_off_rounded,
+                    _ => Icons.cloud_outlined,
+                  }),
+                  title: Text(l.serverStatus),
+                  subtitle: Text(switch (backend) {
+                    BackendStatus.connected => l.serverConnected,
+                    BackendStatus.unreachable => l.serverUnreachable,
+                    BackendStatus.notConfigured => l.serverNotConfigured,
+                    null => '…',
+                  }),
+                  onTap: () => ref.invalidate(backendStatusProvider),
                 ),
                 ListTile(
                   leading: const Icon(Icons.restart_alt_rounded),
