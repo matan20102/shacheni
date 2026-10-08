@@ -10,9 +10,12 @@ Schema changes happen **only** through the migration files here, never by editin
 | `migrations/…100200_rls.sql` | default-deny RLS, read-only grants (no client DML except own device tokens) |
 | `migrations/…100300_storage.sql` | private buckets `avatars`, `delivery-proofs` + policies |
 | `migrations/…100400_legal.sql` | legal TODO placeholders (5 types × he/en), `publish_legal_document`, `get_current_legal_documents` |
+| `migrations/…090000_sign_in.sql` | Google sign-in: profile name from Google, consent gate (`my_pending_legal_documents`, `accept_legal_documents`), `update_my_profile` (phone → +972, unique) |
 | `tests/schema_test.sql` | 83 checks: constraints, triggers, RLS per role (applicant / resident / other building / admin / anon), storage policies |
+| `tests/sign_in_test.sql` | 26 checks for the sign-in migration |
+| `tests/kit.sql`, `tests/report.sql` | shared assertion helpers (included by every `*_test.sql`) |
 
-**Not built yet:** the write RPCs (`create_building`, `submit_membership_application`, …), the views (`public_profile_v`, admin views), `pg_cron` ticks, Edge Functions. They come flow by flow, starting with sign-in and joining a building.
+**Not built yet:** the write RPCs (`create_building`, `submit_membership_application`, …), the views (`public_profile_v`, admin views), `pg_cron` ticks, Edge Functions. They come flow by flow; next is joining a building.
 
 ## Run the tests locally (no Docker)
 
@@ -22,10 +25,20 @@ Needs any local PostgreSQL 17 server. `tests/local/supabase_stub.sql` fakes the 
 PGBIN="/path/to/pgsql/bin" PGPORT=5432 supabase/tests/local/run_tests.sh
 ```
 
-The script rebuilds a throwaway `shacheni_test` database from the migrations, then runs the tests (all inside a rolled-back transaction).
+The script rebuilds a throwaway `shacheni_test` database from the migrations, then runs every `tests/*_test.sql` (each inside a rolled-back transaction).
 
 ## Conventions
 
 - Errors that the app must handle are raised with a stable code as the message (`SELF_REVIEW_FORBIDDEN`, `NOT_SPACE_HOLDER`, `PROOF_REQUIRED`, …). Constraint errors use SQLSTATE: `23P01` = slot taken, `23505` = duplicate.
 - Every function: `security definer` only when needed, `set search_path = ''`, schema-qualified names.
 - The app ships only the **publishable** key. The service-role key and DB password never go in the app or in git.
+
+## Deploy to the dev project
+
+Linked once with `supabase link --project-ref ncsxflfhnezkzxavkdhp`. After adding a migration:
+
+```powershell
+$env:Path = "C:\src\supabase;" + $env:Path
+supabase db push --dry-run   # lists the migrations that are not applied yet
+supabase db push
+```

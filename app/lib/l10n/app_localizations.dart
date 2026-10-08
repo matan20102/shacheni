@@ -469,6 +469,24 @@ abstract class AppL10n {
   /// **'התחלה'**
   String get getStarted;
 
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In he, this message translates to:
+  /// **'המשך עם Google'**
+  String get continueWithGoogle;
+
+  /// No description provided for @signInFailed.
+  ///
+  /// In he, this message translates to:
+  /// **'ההתחברות נכשלה. נסו שוב.'**
+  String get signInFailed;
+
+  /// No description provided for @loadFailed.
+  ///
+  /// In he, this message translates to:
+  /// **'הטעינה נכשלה. בדקו את החיבור ונסו שוב.'**
+  String get loadFailed;
+
   /// No description provided for @skipToDemo.
   ///
   /// In he, this message translates to:

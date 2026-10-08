@@ -25,6 +25,8 @@ alter default privileges in schema public grant all on functions to anon, authen
 create table auth.users (
   id uuid primary key default gen_random_uuid(),
   phone text unique,
+  email text,
+  raw_user_meta_data jsonb not null default '{}',
   created_at timestamptz not null default now()
 );
 

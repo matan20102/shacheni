@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/auth.dart';
 import '../data/models.dart';
 import '../data/providers.dart';
 import '../features/access/access_screens.dart';
@@ -21,6 +22,7 @@ import '../features/shell/main_shell.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.listen(demoProvider, (_, _) => refresh.value++);
+  ref.listen(gateProvider, (_, _) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
   const accessPaths = {'/welcome', '/phone', '/otp', '/legal', '/join', '/apply', '/pending'};
@@ -32,8 +34,24 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/welcome',
     refreshListenable: refresh,
     redirect: (context, state) {
-      final stage = ref.read(demoProvider).data.stage;
+      var stage = ref.read(demoProvider).data.stage;
       final loc = state.matchedLocation;
+      // Real backend: sign-in and consent are decided by Supabase; the steps after them
+      // (join → apply → pending → approved) still come from the demo store for now.
+      switch (ref.read(gateProvider)) {
+        case Gate.demo:
+          break;
+        case Gate.loading:
+          return loc == '/loading' ? null : '/loading';
+        case Gate.signedOut:
+          if (loc.startsWith('/doc/')) return null;
+          return loc == '/welcome' ? null : '/welcome';
+        case Gate.consent:
+          if (loc.startsWith('/doc/')) return null;
+          return loc == '/legal' ? null : '/legal';
+        case Gate.ready:
+          if (stage.index < AuthStage.join.index) stage = AuthStage.join;
+      }
       if (stage == AuthStage.approved) {
         return accessPaths.contains(loc) ? '/home' : null;
       }
@@ -42,6 +60,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return loc == target ? null : target;
     },
     routes: [
+      simple('/loading', (_) => const LoadingScreen()),
       simple('/welcome', (_) => const WelcomeScreen()),
       simple('/phone', (_) => const PhoneScreen()),
       simple('/otp', (_) => const OtpScreen()),

@@ -217,6 +217,15 @@ class AppL10nHe extends AppL10n {
   String get getStarted => 'התחלה';
 
   @override
+  String get continueWithGoogle => 'המשך עם Google';
+
+  @override
+  String get signInFailed => 'ההתחברות נכשלה. נסו שוב.';
+
+  @override
+  String get loadFailed => 'הטעינה נכשלה. בדקו את החיבור ונסו שוב.';
+
+  @override
   String get skipToDemo => 'דלגו להדגמה (ללא הרשמה)';
 
   @override

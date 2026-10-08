@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/format.dart';
 import '../../core/widgets.dart';
+import '../../data/auth.dart';
 import '../../data/backend.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
@@ -81,7 +82,7 @@ class MeScreen extends ConsumerWidget {
             row(Icons.domain_add_rounded, l.platformArea, () => context.push('/platform')),
           ],
           const SizedBox(height: 6),
-          row(Icons.logout_rounded, l.logOut, () => ref.read(demoProvider.notifier).act((d) => d.stage = AuthStage.welcome),
+          row(Icons.logout_rounded, l.logOut, () => signOutEverywhere(ref),
               color: AppColors.danger),
         ],
       ),

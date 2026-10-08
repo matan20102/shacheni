@@ -5,3 +5,6 @@ const kSupabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const kSupabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
 
 bool get kBackendConfigured => kSupabaseUrl.isNotEmpty && kSupabaseKey.isNotEmpty;
+
+/// Recorded with legal acceptances (keep in step with pubspec `version`).
+const kAppVersion = '0.1.0';
