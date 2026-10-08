@@ -14,6 +14,8 @@ dependencies:
   intl: any
   flutter_riverpod: ^3.0.0
   go_router: ^17.0.0
+  supabase_flutter: ^2.18.0
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

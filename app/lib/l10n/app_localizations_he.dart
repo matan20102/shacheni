@@ -1511,6 +1511,18 @@ class AppL10nHe extends AppL10n {
   String get resetDemo => 'איפוס נתוני ההדגמה';
 
   @override
+  String get serverStatus => 'שרת';
+
+  @override
+  String get serverConnected => 'מחובר ל-Supabase';
+
+  @override
+  String get serverNotConfigured => 'לא מוגדר — נתוני הדגמה בלבד';
+
+  @override
+  String get serverUnreachable => 'אין חיבור לשרת';
+
+  @override
   String get profileEditNote =>
       'שינוי דירה שולח בקשת הצטרפות חדשה לאישור המנהל.';
 

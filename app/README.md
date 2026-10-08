@@ -1,6 +1,6 @@
 # Shacheni (שכני) — Flutter app (visual prototype v0.1)
 
-Clickable prototype of the Shacheni app: **Hebrew-first (RTL) + English (LTR)**, built from the product specification in [`../docs`](../docs/PRD.md). It runs on **sample data held in memory** — there is **no backend yet** (Supabase comes with Phase 5/8). Nothing you do is saved.
+Clickable prototype of the Shacheni app: **Hebrew-first (RTL) + English (LTR)**, built from the product specification in [`../docs`](../docs/PRD.md). It runs on **sample data held in memory** — nothing you do is saved. The Supabase client is wired in (dev project `shacheni-dev`), but no screen reads or writes the database yet (schema = Phase 5, screens = Phase 8+).
 
 ## Run it
 
@@ -13,6 +13,17 @@ flutter run -d chrome                       # opens the app in Chrome (phone-siz
 flutter run -d chrome --dart-define=DEMO_SIGNED_IN=true   # skip onboarding, start on Home
 flutter run -d chrome --dart-define=DEMO_LOCALE=en        # force English (default: device language → Hebrew)
 ```
+
+### Connecting to Supabase (dev)
+
+Config comes from a JSON file passed at build time — no URL or key in the code. `config/*.json` is git-ignored except the template:
+
+```powershell
+copy config\example.json config\dev.json   # then fill in the Project URL + publishable key
+flutter run -d chrome --dart-define-from-file=config/dev.json
+```
+
+Settings → Demo → **Server** shows *Connected to Supabase*, *Not configured* (no config file → pure demo) or *Can't reach the server* (tap to retry). Only the **publishable** key ever goes in the app — never the secret/service-role key or the DB password.
 
 Quality checks: `flutter analyze` · `flutter test` · `flutter build web`.
 
