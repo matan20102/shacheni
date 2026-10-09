@@ -9,6 +9,7 @@ import '../../data/auth.dart';
 import '../../data/demo_data.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import 'backend_join_screens.dart';
 
 /// Placeholder body for every legal document until the owner publishes real text (BR-L5).
 /// This is data, not UI copy: it mirrors `legal_document.body_md` for version `0.0-todo`.
@@ -563,6 +564,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(gateProvider) != Gate.demo) return const BackendJoinScreen();
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     return Scaffold(
@@ -697,6 +699,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(gateProvider) != Gate.demo) return const BackendApplyScreen();
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     final decls = [l.decl1, l.decl2, l.decl3, l.decl4, l.decl5];
@@ -816,6 +819,7 @@ class PendingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(gateProvider) != Gate.demo) return const BackendPendingScreen();
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     final mine = d.applications.where((a) => a.isMine).toList();

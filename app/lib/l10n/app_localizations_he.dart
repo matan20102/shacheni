@@ -217,6 +217,127 @@ class AppL10nHe extends AppL10n {
   String get getStarted => 'התחלה';
 
   @override
+  String get saved => 'נשמר';
+
+  @override
+  String get leaveBuilding => 'עזיבת הבניין';
+
+  @override
+  String leaveBuildingTitle(String building) {
+    return 'לעזוב את $building?';
+  }
+
+  @override
+  String get leaveBuildingBody =>
+      'שיוכי החניה שלך יסתיימו, והמודעות והבקשות הפתוחות שלך יבוטלו. ההיסטוריה נשמרת. כדי להצטרף שוב לבניין — לבית החדש או לבניין הזה — יידרש אישור חדש.';
+
+  @override
+  String get errActiveCommitments =>
+      'יש לך הזמנה, משלוח או תשלום פעילים. סיימו או בטלו אותם קודם.';
+
+  @override
+  String get leftBuilding => 'עזבת את הבניין';
+
+  @override
+  String get joinByCode => 'לפי קוד';
+
+  @override
+  String get joinByAddress => 'לפי כתובת';
+
+  @override
+  String get searchBuildingHint => 'שם הבניין, רחוב או עיר';
+
+  @override
+  String get searchAction => 'חיפוש';
+
+  @override
+  String get searchNoResults =>
+      'לא נמצא בניין. בדקו את האיות, או בקשו משכן את קוד ההצטרפות.';
+
+  @override
+  String get actionFailed => 'משהו השתבש. נסו שוב.';
+
+  @override
+  String get errRateLimited => 'יותר מדי ניסיונות. נסו שוב בעוד שעה.';
+
+  @override
+  String get errPhoneTaken => 'מספר הטלפון הזה כבר רשום.';
+
+  @override
+  String get errSpaceHeld =>
+      'אחת החניות כבר משויכת לדייר אחר. בטלו את הסימון כדי להמשיך.';
+
+  @override
+  String get errSelfReview => 'אישור עצמי של בקשות כבוי בבניין זה.';
+
+  @override
+  String get errCountMismatch =>
+      'מספר הדירות או החניות אינו תואם למספרים שהוגדרו.';
+
+  @override
+  String get errDuplicateLabel => 'ברשימה יש כפילויות.';
+
+  @override
+  String get errBuildingExists => 'בניין עם שם וכתובת אלה כבר קיים.';
+
+  @override
+  String get errNoteRequired => 'נא לכתוב הערה קצרה.';
+
+  @override
+  String previousRejected(String reason) {
+    return 'הבקשה הקודמת נדחתה: $reason';
+  }
+
+  @override
+  String get checkStatus => 'בדיקת סטטוס';
+
+  @override
+  String get infoRequestFromAdmin => 'מנהל הבניין שאל:';
+
+  @override
+  String get yourAnswer => 'התשובה שלך';
+
+  @override
+  String get membershipDisabled => 'החברות שלך מושבתת. נא לפנות למנהל הבניין.';
+
+  @override
+  String get adminComingSoon =>
+      'בקשות חניה, מחלוקות וסטטיסטיקה יופיעו כאן כשהתכונות האלה יעלו.';
+
+  @override
+  String generateItems(String count) {
+    return 'מילוי אוטומטי של $count';
+  }
+
+  @override
+  String get listHint => 'אחד בכל שורה (או מופרדים בפסיקים)';
+
+  @override
+  String buildingActivatedCode(String code) {
+    return 'הבניין הופעל. קוד הצטרפות: $code';
+  }
+
+  @override
+  String get continueSetup => 'המשך הגדרה';
+
+  @override
+  String get noBuildingsYet => 'אין עדיין בניינים';
+
+  @override
+  String get reasonHint => 'סיבה (המבקש יראה אותה)';
+
+  @override
+  String get questionHint => 'מה צריך לברר?';
+
+  @override
+  String residentsCount(String count) {
+    return '$count דיירים';
+  }
+
+  @override
+  String get phoneHint => 'נייד, לדוגמה 050-123-4567';
+
+  @override
   String get continueWithGoogle => 'המשך עם Google';
 
   @override

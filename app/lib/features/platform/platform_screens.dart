@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/format.dart';
 import '../../core/widgets.dart';
+import '../../data/auth.dart';
 import '../../data/providers.dart';
+import 'backend_platform_screens.dart';
 
 /// P01 — buildings (platform admin). In the pilot there is one building.
 class PlatformScreen extends ConsumerWidget {
@@ -13,6 +15,7 @@ class PlatformScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(gateProvider) != Gate.demo) return const BackendPlatformScreen();
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     final lang = context.lang;
@@ -89,7 +92,10 @@ class PlatformScreen extends ConsumerWidget {
 
 /// P02 — create building wizard: details → apartments → parking spaces → review/activate.
 class CreateBuildingScreen extends ConsumerStatefulWidget {
-  const CreateBuildingScreen({super.key});
+  const CreateBuildingScreen({super.key, this.resumeId});
+
+  /// Real backend only: continue setting up this draft building.
+  final String? resumeId;
 
   @override
   ConsumerState<CreateBuildingScreen> createState() => _CreateBuildingScreenState();
@@ -114,6 +120,7 @@ class _CreateBuildingScreenState extends ConsumerState<CreateBuildingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(gateProvider) != Gate.demo) return BackendCreateBuildingScreen(resumeId: widget.resumeId);
     final l = context.l10n;
     final steps = [l.stepDetails, l.stepApartments, l.stepParking, l.stepReview];
     final aptCount = int.tryParse(_apts.text) ?? 0;

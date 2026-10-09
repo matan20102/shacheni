@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app/config.dart';
+import 'membership.dart';
 import 'models.dart';
 import 'providers.dart';
 
@@ -76,9 +77,10 @@ class AuthRepository {
 
 final authRepoProvider = Provider<AuthRepository>((ref) => AuthRepository());
 
-/// Where the real backend says the user is. `demo` = no backend configured (prototype only).
-/// After `ready`, the remaining onboarding steps (join, apply, pending) still run on demo data.
-enum Gate { demo, loading, signedOut, consent, ready }
+/// Where the real backend says the user is (from `get_my_access`). `demo` = no backend configured.
+///   consent → terms/privacy not accepted · join → no live membership (none, withdrawn, rejected)
+///   pending → applied / asked for info / disabled · ready → approved resident
+enum Gate { demo, loading, signedOut, consent, join, pending, ready }
 
 class GateNotifier extends Notifier<Gate> {
   @override
@@ -92,12 +94,20 @@ class GateNotifier extends Notifier<Gate> {
 
   Future<void> refresh() async {
     if (Supabase.instance.client.auth.currentSession == null) {
+      ref.read(myAccessProvider.notifier).set(null);
+      ref.read(joinInfoProvider.notifier).set(null);
       state = Gate.signedOut;
       return;
     }
     try {
-      final pending = await ref.read(authRepoProvider).pendingLegal('he');
-      state = pending.isEmpty ? Gate.ready : Gate.consent;
+      final access = await ref.read(membershipRepoProvider).myAccess();
+      ref.read(myAccessProvider.notifier).set(access);
+      state = switch (access) {
+        MyAccess(legalPending: true) => Gate.consent,
+        MyAccess(membership: Membership(status: 'approved')) => Gate.ready,
+        MyAccess(membership: Membership(status: 'pending' || 'info_requested' || 'disabled')) => Gate.pending,
+        _ => Gate.join,
+      };
     } catch (_) {
       state = Gate.consent; // fail closed: the consent screen shows the error and a retry
     }

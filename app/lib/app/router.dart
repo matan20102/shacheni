@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/auth.dart';
+import '../data/membership.dart';
 import '../data/models.dart';
 import '../data/providers.dart';
 import '../features/access/access_screens.dart';
@@ -17,15 +18,17 @@ import '../features/parking/parking_screens.dart';
 import '../features/platform/platform_screens.dart';
 import '../features/shell/main_shell.dart';
 
+/// Onboarding screens; an approved resident is sent home from any of them.
+const _accessPaths = {'/', '/loading', '/welcome', '/phone', '/otp', '/legal', '/join', '/apply', '/pending'};
+
 /// Routing gate (architecture doc "App routing gates"): the access stage decides which
 /// screens are reachable; an approved resident never sees the access screens again.
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.listen(demoProvider, (_, _) => refresh.value++);
   ref.listen(gateProvider, (_, _) => refresh.value++);
+  ref.listen(myAccessProvider, (_, _) => refresh.value++);
   ref.onDispose(refresh.dispose);
-
-  const accessPaths = {'/welcome', '/phone', '/otp', '/legal', '/join', '/apply', '/pending'};
 
   GoRoute simple(String path, Widget Function(GoRouterState s) build) =>
       GoRoute(path: path, builder: (context, state) => build(state));
@@ -34,26 +37,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/welcome',
     refreshListenable: refresh,
     redirect: (context, state) {
-      var stage = ref.read(demoProvider).data.stage;
+      final stage = ref.read(demoProvider).data.stage;
       final loc = state.matchedLocation;
-      // Real backend: sign-in and consent are decided by Supabase; the steps after them
-      // (join → apply → pending → approved) still come from the demo store for now.
-      switch (ref.read(gateProvider)) {
-        case Gate.demo:
-          break;
-        case Gate.loading:
-          return loc == '/loading' ? null : '/loading';
-        case Gate.signedOut:
-          if (loc.startsWith('/doc/')) return null;
-          return loc == '/welcome' ? null : '/welcome';
-        case Gate.consent:
-          if (loc.startsWith('/doc/')) return null;
-          return loc == '/legal' ? null : '/legal';
-        case Gate.ready:
-          if (stage.index < AuthStage.join.index) stage = AuthStage.join;
-      }
+      final gate = ref.read(gateProvider);
+      if (gate != Gate.demo) return _backendRedirect(gate, ref.read(myAccessProvider), loc);
       if (stage == AuthStage.approved) {
-        return accessPaths.contains(loc) ? '/home' : null;
+        return _accessPaths.contains(loc) ? '/home' : null;
       }
       if (loc.startsWith('/doc/')) return null;
       final target = '/${stage.name}';
@@ -61,6 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       simple('/loading', (_) => const LoadingScreen()),
+      simple('/', (_) => const LoadingScreen()),
       simple('/welcome', (_) => const WelcomeScreen()),
       simple('/phone', (_) => const PhoneScreen()),
       simple('/otp', (_) => const OtpScreen()),
@@ -112,8 +102,37 @@ final routerProvider = Provider<GoRouter>((ref) {
       simple('/admin/settings', (_) => const BuildingSettingsScreen()),
       // Platform admin
       simple('/platform', (_) => const PlatformScreen()),
-      simple('/platform/create', (_) => const CreateBuildingScreen()),
+      simple('/platform/create', (s) => CreateBuildingScreen(resumeId: s.uri.queryParameters['building'])),
     ],
   );
 });
 
+
+/// Routing with the real backend (gate from `get_my_access`). Admin and platform screens stay
+/// reachable for admins at every stage after consent: the owner sets up the building and approves
+/// their own application before they are a resident themselves.
+String? _backendRedirect(Gate gate, MyAccess? access, String loc) {
+  String? only(Set<String> allowed, String home) => allowed.contains(loc) ? null : home;
+  if (loc.startsWith('/doc/')) return null;
+  final adminArea = loc.startsWith('/admin') || loc.startsWith('/platform');
+  final isAdmin = access != null && (access.isBuildingAdmin || access.isPlatformAdmin);
+  switch (gate) {
+    case Gate.demo:
+      return null;
+    case Gate.loading:
+      return only({'/loading'}, '/loading');
+    case Gate.signedOut:
+      return only({'/welcome'}, '/welcome');
+    case Gate.consent:
+      return only({'/legal'}, '/legal');
+    case Gate.join:
+      if (adminArea && isAdmin) return null;
+      return only({'/join', '/apply'}, '/join');
+    case Gate.pending:
+      if (adminArea && isAdmin) return null;
+      return only({'/pending'}, '/pending');
+    case Gate.ready:
+      if (adminArea && !isAdmin) return '/home';
+      return _accessPaths.contains(loc) ? '/home' : null;
+  }
+}

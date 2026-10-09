@@ -469,6 +469,216 @@ abstract class AppL10n {
   /// **'התחלה'**
   String get getStarted;
 
+  /// No description provided for @saved.
+  ///
+  /// In he, this message translates to:
+  /// **'נשמר'**
+  String get saved;
+
+  /// No description provided for @leaveBuilding.
+  ///
+  /// In he, this message translates to:
+  /// **'עזיבת הבניין'**
+  String get leaveBuilding;
+
+  /// No description provided for @leaveBuildingTitle.
+  ///
+  /// In he, this message translates to:
+  /// **'לעזוב את {building}?'**
+  String leaveBuildingTitle(String building);
+
+  /// No description provided for @leaveBuildingBody.
+  ///
+  /// In he, this message translates to:
+  /// **'שיוכי החניה שלך יסתיימו, והמודעות והבקשות הפתוחות שלך יבוטלו. ההיסטוריה נשמרת. כדי להצטרף שוב לבניין — לבית החדש או לבניין הזה — יידרש אישור חדש.'**
+  String get leaveBuildingBody;
+
+  /// No description provided for @errActiveCommitments.
+  ///
+  /// In he, this message translates to:
+  /// **'יש לך הזמנה, משלוח או תשלום פעילים. סיימו או בטלו אותם קודם.'**
+  String get errActiveCommitments;
+
+  /// No description provided for @leftBuilding.
+  ///
+  /// In he, this message translates to:
+  /// **'עזבת את הבניין'**
+  String get leftBuilding;
+
+  /// No description provided for @joinByCode.
+  ///
+  /// In he, this message translates to:
+  /// **'לפי קוד'**
+  String get joinByCode;
+
+  /// No description provided for @joinByAddress.
+  ///
+  /// In he, this message translates to:
+  /// **'לפי כתובת'**
+  String get joinByAddress;
+
+  /// No description provided for @searchBuildingHint.
+  ///
+  /// In he, this message translates to:
+  /// **'שם הבניין, רחוב או עיר'**
+  String get searchBuildingHint;
+
+  /// No description provided for @searchAction.
+  ///
+  /// In he, this message translates to:
+  /// **'חיפוש'**
+  String get searchAction;
+
+  /// No description provided for @searchNoResults.
+  ///
+  /// In he, this message translates to:
+  /// **'לא נמצא בניין. בדקו את האיות, או בקשו משכן את קוד ההצטרפות.'**
+  String get searchNoResults;
+
+  /// No description provided for @actionFailed.
+  ///
+  /// In he, this message translates to:
+  /// **'משהו השתבש. נסו שוב.'**
+  String get actionFailed;
+
+  /// No description provided for @errRateLimited.
+  ///
+  /// In he, this message translates to:
+  /// **'יותר מדי ניסיונות. נסו שוב בעוד שעה.'**
+  String get errRateLimited;
+
+  /// No description provided for @errPhoneTaken.
+  ///
+  /// In he, this message translates to:
+  /// **'מספר הטלפון הזה כבר רשום.'**
+  String get errPhoneTaken;
+
+  /// No description provided for @errSpaceHeld.
+  ///
+  /// In he, this message translates to:
+  /// **'אחת החניות כבר משויכת לדייר אחר. בטלו את הסימון כדי להמשיך.'**
+  String get errSpaceHeld;
+
+  /// No description provided for @errSelfReview.
+  ///
+  /// In he, this message translates to:
+  /// **'אישור עצמי של בקשות כבוי בבניין זה.'**
+  String get errSelfReview;
+
+  /// No description provided for @errCountMismatch.
+  ///
+  /// In he, this message translates to:
+  /// **'מספר הדירות או החניות אינו תואם למספרים שהוגדרו.'**
+  String get errCountMismatch;
+
+  /// No description provided for @errDuplicateLabel.
+  ///
+  /// In he, this message translates to:
+  /// **'ברשימה יש כפילויות.'**
+  String get errDuplicateLabel;
+
+  /// No description provided for @errBuildingExists.
+  ///
+  /// In he, this message translates to:
+  /// **'בניין עם שם וכתובת אלה כבר קיים.'**
+  String get errBuildingExists;
+
+  /// No description provided for @errNoteRequired.
+  ///
+  /// In he, this message translates to:
+  /// **'נא לכתוב הערה קצרה.'**
+  String get errNoteRequired;
+
+  /// No description provided for @previousRejected.
+  ///
+  /// In he, this message translates to:
+  /// **'הבקשה הקודמת נדחתה: {reason}'**
+  String previousRejected(String reason);
+
+  /// No description provided for @checkStatus.
+  ///
+  /// In he, this message translates to:
+  /// **'בדיקת סטטוס'**
+  String get checkStatus;
+
+  /// No description provided for @infoRequestFromAdmin.
+  ///
+  /// In he, this message translates to:
+  /// **'מנהל הבניין שאל:'**
+  String get infoRequestFromAdmin;
+
+  /// No description provided for @yourAnswer.
+  ///
+  /// In he, this message translates to:
+  /// **'התשובה שלך'**
+  String get yourAnswer;
+
+  /// No description provided for @membershipDisabled.
+  ///
+  /// In he, this message translates to:
+  /// **'החברות שלך מושבתת. נא לפנות למנהל הבניין.'**
+  String get membershipDisabled;
+
+  /// No description provided for @adminComingSoon.
+  ///
+  /// In he, this message translates to:
+  /// **'בקשות חניה, מחלוקות וסטטיסטיקה יופיעו כאן כשהתכונות האלה יעלו.'**
+  String get adminComingSoon;
+
+  /// No description provided for @generateItems.
+  ///
+  /// In he, this message translates to:
+  /// **'מילוי אוטומטי של {count}'**
+  String generateItems(String count);
+
+  /// No description provided for @listHint.
+  ///
+  /// In he, this message translates to:
+  /// **'אחד בכל שורה (או מופרדים בפסיקים)'**
+  String get listHint;
+
+  /// No description provided for @buildingActivatedCode.
+  ///
+  /// In he, this message translates to:
+  /// **'הבניין הופעל. קוד הצטרפות: {code}'**
+  String buildingActivatedCode(String code);
+
+  /// No description provided for @continueSetup.
+  ///
+  /// In he, this message translates to:
+  /// **'המשך הגדרה'**
+  String get continueSetup;
+
+  /// No description provided for @noBuildingsYet.
+  ///
+  /// In he, this message translates to:
+  /// **'אין עדיין בניינים'**
+  String get noBuildingsYet;
+
+  /// No description provided for @reasonHint.
+  ///
+  /// In he, this message translates to:
+  /// **'סיבה (המבקש יראה אותה)'**
+  String get reasonHint;
+
+  /// No description provided for @questionHint.
+  ///
+  /// In he, this message translates to:
+  /// **'מה צריך לברר?'**
+  String get questionHint;
+
+  /// No description provided for @residentsCount.
+  ///
+  /// In he, this message translates to:
+  /// **'{count} דיירים'**
+  String residentsCount(String count);
+
+  /// No description provided for @phoneHint.
+  ///
+  /// In he, this message translates to:
+  /// **'נייד, לדוגמה 050-123-4567'**
+  String get phoneHint;
+
   /// No description provided for @continueWithGoogle.
   ///
   /// In he, this message translates to:

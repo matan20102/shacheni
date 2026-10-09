@@ -7,6 +7,7 @@ import '../../core/format.dart';
 import '../../core/widgets.dart';
 import '../../data/demo_data.dart';
 import '../../data/models.dart';
+import '../../data/membership.dart';
 import '../../data/providers.dart';
 
 class _Action {
@@ -123,7 +124,7 @@ class HomeScreen extends ConsumerWidget {
                       children: [
                         const Icon(Icons.apartment_rounded, size: 18, color: AppColors.primary),
                         const SizedBox(width: 6),
-                        Text(d.buildingName.of(lang), style: AppText.smallBold.copyWith(color: AppColors.ink)),
+                        Text(currentBuildingName(ref, context), style: AppText.smallBold.copyWith(color: AppColors.ink)),
                       ],
                     ),
                   ),

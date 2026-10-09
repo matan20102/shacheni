@@ -57,6 +57,7 @@ Part of the [PRD](PRD.md). Version v0.3 (2026-10-02).
 | ID | Decision | Where applied |
 |---|---|---|
 | F36 | **Sign-in with Google instead of phone + SMS OTP.** No SMS provider needed. The phone number is still collected (profile / application form), normalized to +972, unique, but **not SMS-verified**; the building admin verifies applicants as before. The Google email is kept only in Supabase Auth (`auth.users`), not in `profile`. Consequences: replaces **P1** (no email) and **O5** (SMS provider); on iOS, App Store rules require **Sign in with Apple** next to Google before submission | Migration `20261009090000_sign_in.sql`; app `lib/data/auth.dart`; architecture §12.2 |
+| F37 | **Find a building by name / address**, in addition to the join code (amends **BR-B6**: the code is no longer the only way in). Finding a building still grants nothing — the building admin verifies every applicant. Safeguards: terms accepted first; active buildings only; results show name/address/city only, max 10; 30 searches/hour/user (join-code attempts keep their own 10 wrong/hour limit) | Migration `20261009150000_join_search.sql`; Join screen tabs "By code / By address" |
 
 ### A3. Applied defaults (P) — tell me if you disagree
 
