@@ -1,0 +1,18 @@
+# Netlify builds the Flutter web app on every push to main (see netlify/build.sh).
+# Required environment variables (Netlify → Site configuration → Environment variables):
+#   SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY   — the same values as app/config/dev.json
+[build]
+  command = "bash netlify/build.sh"
+  publish = "app/build/web"
+
+# Flutter web uses #/ routes, so every page is index.html; no redirects needed.
+# Always revalidate the app shell so a new deploy is picked up on the next load.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/flutter_service_worker.js"
+  [headers.values]
+    Cache-Control = "no-cache"
