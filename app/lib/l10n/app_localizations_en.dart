@@ -219,6 +219,141 @@ class AppL10nEn extends AppL10n {
   String get getStarted => 'Get started';
 
   @override
+  String get saved => 'Saved';
+
+  @override
+  String get leaveBuilding => 'Leave building';
+
+  @override
+  String leaveBuildingTitle(String building) {
+    return 'Leave $building?';
+  }
+
+  @override
+  String get leaveBuildingBody =>
+      'Your parking assignments will end, and your open listings and requests will be cancelled. Your history stays. To join a building again — your new home or this one — you\'ll need a new approval.';
+
+  @override
+  String get errActiveCommitments =>
+      'You have a booking, delivery or payment in progress. Finish or cancel it first.';
+
+  @override
+  String get leftBuilding => 'You left the building';
+
+  @override
+  String get joinByCode => 'By code';
+
+  @override
+  String get joinByAddress => 'By address';
+
+  @override
+  String get searchBuildingHint => 'Building name, street or city';
+
+  @override
+  String get searchAction => 'Search';
+
+  @override
+  String get searchNoResults =>
+      'No building found. Check the spelling, or ask a neighbor for the join code.';
+
+  @override
+  String get actionFailed => 'Something went wrong. Please try again.';
+
+  @override
+  String get errRateLimited =>
+      'Too many attempts. Please try again in an hour.';
+
+  @override
+  String get errPhoneTaken => 'This phone number is already registered.';
+
+  @override
+  String get errSpaceHeld =>
+      'One of the spaces is already held by another resident. Untick it to continue.';
+
+  @override
+  String get errSelfReview =>
+      'Approving your own request is turned off for this building.';
+
+  @override
+  String get errCountMismatch =>
+      'The number of apartments or spaces doesn\'t match the numbers you declared.';
+
+  @override
+  String get errDuplicateLabel => 'The list contains duplicates.';
+
+  @override
+  String get errBuildingExists =>
+      'A building with this name and address already exists.';
+
+  @override
+  String get errNoteRequired => 'Please write a short note.';
+
+  @override
+  String previousRejected(String reason) {
+    return 'Your previous request was declined: $reason';
+  }
+
+  @override
+  String get checkStatus => 'Check status';
+
+  @override
+  String get infoRequestFromAdmin => 'The building admin asked:';
+
+  @override
+  String get yourAnswer => 'Your answer';
+
+  @override
+  String get membershipDisabled =>
+      'Your membership is disabled. Please contact the building admin.';
+
+  @override
+  String get adminComingSoon =>
+      'Parking requests, disputes and statistics will appear here as those features go live.';
+
+  @override
+  String generateItems(String count) {
+    return 'Fill $count automatically';
+  }
+
+  @override
+  String get listHint => 'One per line (or separated by commas)';
+
+  @override
+  String buildingActivatedCode(String code) {
+    return 'Building activated. Join code: $code';
+  }
+
+  @override
+  String get continueSetup => 'Continue setup';
+
+  @override
+  String get noBuildingsYet => 'No buildings yet';
+
+  @override
+  String get reasonHint => 'Reason (the applicant will see it)';
+
+  @override
+  String get questionHint => 'What do you need to know?';
+
+  @override
+  String residentsCount(String count) {
+    return '$count residents';
+  }
+
+  @override
+  String get phoneHint => 'Mobile, e.g. 050-123-4567';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get signInFailed => 'Sign-in failed. Please try again.';
+
+  @override
+  String get loadFailed =>
+      'Couldn\'t load. Check your connection and try again.';
+
+  @override
   String get skipToDemo => 'Skip to the demo';
 
   @override

@@ -579,6 +579,8 @@ create policy listing_select on parking_listing for select to authenticated
 6. Deny by default; grant the minimum; log what matters.
 
 ### 12.2 Authentication
+> **Changed by F36 (2026-10-09):** sign-in is **Google OAuth** via Supabase Auth, not phone OTP. The phone number is entered by the user (`update_my_profile`, normalized E.164, unique) and verified by the building admin, not by SMS. The email exists only in `auth.users`. Sign in with Apple must be added before iOS submission. The bullets below describe the original phone-OTP design.
+
 - Supabase Auth, **phone + SMS OTP** (Israeli `+972` numbers in MVP); no passwords. OTP limits: 30 s resend cooldown, ≤ 5 sends/hour/number; provider route to Israel validated in Phase 8.
 - Access token 1 h + refresh token in Keychain/Keystore (`flutter_secure_storage`). Sign-out revokes the refresh token; disabling a membership blocks data access immediately via RLS.
 - App-store reviewers: a pre-approved demo account with a fixed test OTP in a demo building, disabled in prod after review.

@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/format.dart';
 import '../../core/widgets.dart';
+import '../../data/auth.dart';
 import '../../data/backend.dart';
+import '../../data/membership.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 
@@ -19,6 +21,11 @@ class MeScreen extends ConsumerWidget {
     final d = ref.watch(demoProvider).data;
     final lang = context.lang;
     final me = d.me;
+    // Real backend: your own name, apartment and building; admin entries by role.
+    final access = ref.watch(myAccessProvider);
+    final building = currentBuildingName(ref, context);
+    final showAdmin = access == null ? d.isAdmin : access.isBuildingAdmin;
+    final showPlatform = access == null ? d.isAdmin : access.isPlatformAdmin;
 
     Widget row(IconData icon, String label, VoidCallback onTap, {String? trailing, Color? color}) => AppCard(
           margin: const EdgeInsets.only(bottom: 10),
@@ -49,10 +56,10 @@ class MeScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(me.firstHe == 'מתן' && lang == 'he' ? 'מתן לוי' : 'Matan Levy', style: AppText.h2),
-                          Text(l.apartmentIn(me.apartment, d.buildingName.of(lang)), style: AppText.small),
+                          Text(access?.fullName ?? (me.firstHe == 'מתן' && lang == 'he' ? 'מתן לוי' : 'Matan Levy'), style: AppText.h2),
+                          Text(l.apartmentIn(access?.membership?.apartment ?? me.apartment, building), style: AppText.small),
                           const SizedBox(height: 4),
-                          StatusChip(l.verifiedResident(d.buildingName.of(lang)), tone: Tone.success, icon: Icons.verified_rounded),
+                          StatusChip(l.verifiedResident(building), tone: Tone.success, icon: Icons.verified_rounded),
                         ],
                       ),
                     ),
@@ -74,14 +81,13 @@ class MeScreen extends ConsumerWidget {
           row(Icons.local_parking_rounded, l.mySpacesTitle, () => context.push('/parking/spaces')),
           row(Icons.receipt_long_rounded, l.historyTitle, () => context.push('/history')),
           row(Icons.settings_outlined, l.settingsTitle, () => context.push('/settings')),
-          if (d.isAdmin) ...[
-            const SizedBox(height: 6),
+          if (showAdmin || showPlatform) const SizedBox(height: 6),
+          if (showAdmin)
             row(Icons.admin_panel_settings_rounded, l.adminArea, () => context.push('/admin'),
-                trailing: d.pendingApplicationCount > 0 ? '${d.pendingApplicationCount}' : null),
-            row(Icons.domain_add_rounded, l.platformArea, () => context.push('/platform')),
-          ],
+                trailing: access == null && d.pendingApplicationCount > 0 ? '${d.pendingApplicationCount}' : null),
+          if (showPlatform) row(Icons.domain_add_rounded, l.platformArea, () => context.push('/platform')),
           const SizedBox(height: 6),
-          row(Icons.logout_rounded, l.logOut, () => ref.read(demoProvider.notifier).act((d) => d.stage = AuthStage.welcome),
+          row(Icons.logout_rounded, l.logOut, () => signOutEverywhere(ref),
               color: AppColors.danger),
         ],
       ),
@@ -94,6 +100,7 @@ class EditProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(gateProvider) != Gate.demo) return const _BackendEditProfileScreen();
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     return Scaffold(
@@ -118,6 +125,108 @@ class EditProfileScreen extends ConsumerWidget {
   }
 }
 
+/// S39 against Supabase: your name and phone; the apartment comes from your membership and
+/// changes only through the building admin.
+class _BackendEditProfileScreen extends ConsumerStatefulWidget {
+  const _BackendEditProfileScreen();
+
+  @override
+  ConsumerState<_BackendEditProfileScreen> createState() => _BackendEditProfileScreenState();
+}
+
+class _BackendEditProfileScreenState extends ConsumerState<_BackendEditProfileScreen> {
+  late final TextEditingController _name;
+  late final TextEditingController _phone;
+  bool _busy = false;
+  bool _tried = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final access = ref.read(myAccessProvider);
+    _name = TextEditingController(text: access?.fullName ?? '');
+    _phone = TextEditingController(text: localPhone(access?.phone));
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    super.dispose();
+  }
+
+  bool get _nameOk => _name.text.trim().length >= 2;
+  bool get _phoneOk => _phone.text.replaceAll(RegExp(r'\D'), '').length >= 9;
+
+  Future<void> _save() async {
+    final l = context.l10n;
+    setState(() => _tried = true);
+    if (!_nameOk || !_phoneOk) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(membershipRepoProvider).updateProfile(fullName: _name.text.trim(), phone: _phone.text);
+      await ref.read(gateProvider.notifier).refresh(); // reload name/phone everywhere
+      if (!mounted) return;
+      showSnack(context, l.saved);
+      context.pop();
+    } catch (e) {
+      if (mounted) showSnack(context, errorText(context, e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final membership = ref.watch(myAccessProvider)?.membership;
+    return Scaffold(
+      appBar: AppBar(title: Text(l.editProfile)),
+      body: PageBody(
+        children: [
+          TextField(
+            controller: _name,
+            textCapitalization: TextCapitalization.words,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(labelText: l.fullName, errorText: _tried && !_nameOk ? l.fieldRequired : null),
+          ),
+          const SizedBox(height: 12),
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: TextField(
+              controller: _phone,
+              keyboardType: TextInputType.phone,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                labelText: l.phoneLabel,
+                hintText: '050-000-0000',
+                errorText: _tried && !_phoneOk ? l.phoneInvalid : null,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          InputDecorator(
+            decoration: InputDecoration(labelText: l.apartment, enabled: false),
+            child: Text(
+              membership == null ? '—' : l.apartmentIn(membership.apartment, membership.buildingName),
+              style: AppText.body,
+            ),
+          ),
+          const SizedBox(height: 10),
+          InfoBanner(l.profileEditNote, icon: Icons.info_outline_rounded, tone: Tone.warn),
+          const SizedBox(height: 18),
+          FilledButton(
+            onPressed: _busy ? null : _save,
+            child: _busy
+                ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : Text(l.save),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// S41 — settings (language, notifications, legal documents, demo tools).
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -130,12 +239,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _pickup = true;
   bool _parking = true;
 
+  /// Moving out (real backend): confirm, leave, and the router takes you to the join screen.
+  Future<void> _leave(String building) async {
+    final l = context.l10n;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.leaveBuildingTitle(building)),
+        content: Text(l.leaveBuildingBody),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.cancel)),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.leaveBuilding),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await ref.read(membershipRepoProvider).leaveBuilding();
+      if (mounted) showSnack(context, l.leftBuilding);
+      await ref.read(gateProvider.notifier).refresh();
+    } catch (e) {
+      if (mounted) showSnack(context, errorText(context, e));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final locale = ref.watch(localeProvider);
     final demoTools = ref.watch(demoToolsProvider);
     final backend = ref.watch(backendStatusProvider).value;
+    final membership = ref.watch(myAccessProvider)?.membership;
     final d = ref.watch(demoProvider).data;
     final active = d.myTxns.any((t) => t.status == TxStatus.inProgress || t.status == TxStatus.awaitingSettlement);
 
@@ -219,6 +357,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 18),
+          if (membership?.status == 'approved') ...[
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.danger,
+                side: const BorderSide(color: AppColors.danger, width: 1.4),
+              ),
+              onPressed: () => _leave(membership!.buildingName),
+              icon: const Icon(Icons.logout_rounded),
+              label: Text(l.leaveBuilding),
+            ),
+            const SizedBox(height: 10),
+          ],
           OutlinedButton(
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.danger,

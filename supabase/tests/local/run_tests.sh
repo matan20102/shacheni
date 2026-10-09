@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rebuilds a throwaway database from the migrations and runs the schema tests against it.
+# Rebuilds a throwaway database from the migrations and runs every tests/*_test.sql against it.
 # Needs a local PostgreSQL 17 server (no Docker / Supabase CLI). Usage, from the repo root:
 #   PGBIN=/path/to/pgsql/bin PGPORT=54329 supabase/tests/local/run_tests.sh
 set -euo pipefail
@@ -13,4 +13,7 @@ for f in migrations/*.sql; do
   echo "apply  $f"
   $PSQL -d $DB -1 -f "$f"
 done
-$PSQL -d $DB -f tests/schema_test.sql
+for f in tests/*_test.sql; do
+  echo "test   $f"
+  $PSQL -d $DB -f "$f"
+done

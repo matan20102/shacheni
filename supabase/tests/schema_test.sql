@@ -1,67 +1,11 @@
 -- Schema / constraint / trigger / RLS tests. Runs inside one transaction and rolls back.
 --   psql -v ON_ERROR_STOP=1 -f supabase/tests/schema_test.sql
 -- Prints one line per check and fails (non-zero exit) if any check fails.
--- Plain SQL on purpose (no pgTAP needed), so it runs on local Postgres and in the Supabase SQL editor.
+-- Plain SQL on purpose (no pgTAP needed), so it runs on any local Postgres.
 
 begin;
 
--- ---------------------------------------------------------------------------------------------
--- Tiny assertion kit (temporary, rolled back)
--- ---------------------------------------------------------------------------------------------
-create schema t;
-grant usage on schema t to public;
-create table t.results (n serial, name text, ok boolean, detail text);
-grant all on t.results to public;
-grant usage on sequence t.results_n_seq to public;
-
-create function t.ok(name text, cond boolean, detail text default null) returns void language sql as $$
-  insert into t.results (name, ok, detail) values (name, coalesce(cond, false), detail)
-$$;
-
--- Expect the statement to fail with an error whose SQLSTATE or message equals `expected`.
-create function t.throws(name text, stmt text, expected text) returns void language plpgsql as $$
-begin
-  begin
-    execute stmt;
-  exception when others then
-    perform t.ok(name, sqlerrm = expected or sqlstate = expected, sqlstate || ' ' || sqlerrm);
-    return;
-  end;
-  perform t.ok(name, false, 'no error raised');
-end
-$$;
-
-create function t.lives(name text, stmt text) returns void language plpgsql as $$
-begin
-  execute stmt;
-  perform t.ok(name, true);
-exception when others then
-  perform t.ok(name, false, sqlstate || ' ' || sqlerrm);
-end
-$$;
-
-create function t.count(stmt text) returns bigint language plpgsql as $$
-declare n bigint;
-begin
-  execute 'select count(*) from (' || stmt || ') s' into n;
-  return n;
-end
-$$;
-
--- Act as a user (or anon) for the following statements; t.as_admin() switches back.
-create function t.as_user(u uuid) returns void language sql as $$
-  select set_config('request.jwt.claims', json_build_object('sub', u, 'role', 'authenticated')::text, true);
-  select set_config('role', 'authenticated', true);
-$$;
-create function t.as_anon() returns void language sql as $$
-  select set_config('request.jwt.claims', '{"role":"anon"}', true);
-  select set_config('role', 'anon', true);
-$$;
-create function t.as_admin() returns void language sql as $$
-  select set_config('role', 'postgres', true);
-  select set_config('request.jwt.claims', '', true);
-$$;
-grant execute on all functions in schema t to public;
+\ir kit.sql
 
 -- ---------------------------------------------------------------------------------------------
 -- Fixtures: building A (owner = platform + building admin, alice, bob, carol=applicant),
@@ -443,19 +387,6 @@ select t.as_user('a0000000-0000-4000-8000-000000000003');
 select t.throws('users cannot publish legal documents',
   $$select publish_legal_document('terms_of_service', 'x', 'he', 't', 'b')$$, '42501');
 
--- =============================================================================================
--- Report
--- =============================================================================================
-select t.as_admin();
-\pset footer off
-select n, case when ok then 'ok' else 'FAIL' end as result, name, detail from t.results order by n;
-select count(*) filter (where ok) as passed, count(*) filter (where not ok) as failed from t.results;
-do $$
-begin
-  if exists (select 1 from t.results where not ok) then
-    raise exception 'schema tests failed';
-  end if;
-end
-$$;
+\ir report.sql
 
 rollback;

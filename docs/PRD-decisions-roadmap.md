@@ -52,11 +52,18 @@ Part of the [PRD](PRD.md). Version v0.3 (2026-10-02).
 | F34 | **Simplified admin model:** Platform Admin → you; Building Admin → you; Resident → any approved resident; same person may hold both admin roles | PRD §2 |
 | F35 | **MVP priorities** (1 easy registration … 10 clean Hebrew RTL); keep it simple; no unnecessary administrative complexity | PRD §5.1a; admin screens reduced from 17 to 14 |
 
+### A2b. Finalized decisions — round 3 (2026-10-09, during development)
+
+| ID | Decision | Where applied |
+|---|---|---|
+| F36 | **Sign-in with Google instead of phone + SMS OTP.** No SMS provider needed. The phone number is still collected (profile / application form), normalized to +972, unique, but **not SMS-verified**; the building admin verifies applicants as before. The Google email is kept only in Supabase Auth (`auth.users`), not in `profile`. Consequences: replaces **P1** (no email) and **O5** (SMS provider); on iOS, App Store rules require **Sign in with Apple** next to Google before submission | Migration `20261009090000_sign_in.sql`; app `lib/data/auth.dart`; architecture §12.2 |
+| F37 | **Find a building by name / address**, in addition to the join code (amends **BR-B6**: the code is no longer the only way in). Finding a building still grants nothing — the building admin verifies every applicant. Safeguards: terms accepted first; active buildings only; results show name/address/city only, max 10; 30 searches/hour/user (join-code attempts keep their own 10 wrong/hour limit) | Migration `20261009150000_join_search.sql`; Join screen tabs "By code / By address" |
+
 ### A3. Applied defaults (P) — tell me if you disagree
 
 | ID | Gap in the brief | Default applied | Alternative / consequence |
 |---|---|---|---|
-| P1 | "Email if required" | **Not collected** (phone OTP is the identity) | Optional email for notices/recovery |
+| P1 | "Email if required" | ~~**Not collected** (phone OTP is the identity)~~ **Superseded by F36:** Google is the identity; the email stays in Supabase Auth only | Optional email for notices/recovery |
 | P2 | How a user selects *their* building when buildings are hidden | **Building join code** (8 chars) given by you (poster/WhatsApp); typed manually until a domain exists; code only *resolves* the building, admin approval is the gate; rate-limited; rotatable | Personal invites; listing buildings (rejected: leaks buildings) |
 | P3 | Parking assignment holder: resident or apartment | **Resident (membership)**; one active holder per space; apartment kept for verification | Apartment-level holder (weaker "assigned to the user") |
 | P4 | Ending/reassigning a space with future reservations | You must **explicitly cancel** those reservations (no penalty to the former holder; refund records if paid) | Block until they finish |
@@ -87,7 +94,7 @@ Part of the [PRD](PRD.md). Version v0.3 (2026-10-02).
 | **O2** | **Final bundle/application IDs** and a **public privacy-policy URL** for store listings (any URL you control until a domain exists) | IDs are permanent after the first TestFlight/Play upload; stores require a privacy-policy URL for listings (the text stays TODO until you write it) | IDs: claim in Phase 7, freeze before first upload; URL: before Phase 15 submissions | Accept P23; host a one-page static placeholder |
 | **O3** | **Your legal texts:** Terms of Service, Privacy Policy, community rules, resident declaration, building agreement (and which language is binding; package liability wording; data location) | Engineering stores/versions/gates them but does not write them. **Real residents should not join until these exist** | Launch gate (Phase 15); not blocking development | Write when ready; publishing a new version triggers re-acceptance automatically |
 | **O4** | **Create the accounts you own:** Apple Developer (individual), Google Play (personal), GitHub, Supabase org (Pro for prod), Firebase project, SMS provider | Everything downstream depends on them; Apple/Google verification can take days; **new personal Play accounts must complete a closed test (≈ 12 testers, 14 days — verify) before production release** (the pilot itself can stay in closed testing) | Phase 6–7 | I'll provide a step-by-step checklist when we reach Phase 6 |
-| **O5** | **SMS OTP provider/budget** for Israeli numbers | Deliverability/cost | Phase 8 | Test two providers on real Israeli numbers |
+| ~~O5~~ | ~~SMS OTP provider/budget~~ — **closed by F36** (Google sign-in). New follow-up: add **Sign in with Apple** before the first iOS submission | App Store guideline: apps offering third-party login must also offer Sign in with Apple | Before Phase 15 (iOS) | Supabase supports the Apple provider; needs the Apple Developer account (O4) |
 | **O6** | Confirm **P19** (self-review also covers your own parking assignment and disputes) | Affects trigger behavior and A04/A08/A10 banners | Phase 5 | Keep as specified |
 | **O7** | Confirm **P20–P22** (photo retention 30 days, camera-only, door delivery off by default, 24 h auto-confirm) | Privacy/trust trade-offs of the new feature | Phase 4–5 | Keep as specified |
 | **O8** | Optional: **trademark/store-name check for "Shacheni"/"שכני"** (Israeli trademark registry, App Store/Play search, social handles) | Name is decided; this only surfaces conflicts early. I cannot verify availability myself | Before Phase 15 | A short lawyer/registry check; non-blocking |

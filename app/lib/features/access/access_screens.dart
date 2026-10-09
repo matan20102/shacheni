@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/tokens.dart';
 import '../../core/format.dart';
 import '../../core/widgets.dart';
+import '../../data/auth.dart';
 import '../../data/demo_data.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import 'backend_join_screens.dart';
 
 /// Placeholder body for every legal document until the owner publishes real text (BR-L5).
 /// This is data, not UI copy: it mirrors `legal_document.body_md` for version `0.0-todo`.
@@ -78,21 +80,72 @@ class WelcomeScreen extends ConsumerWidget {
                   ),
                 ),
               const Spacer(flex: 2),
-              FilledButton(
-                onPressed: () => ref.read(demoProvider.notifier).act((d) => d.stage = AuthStage.phone),
-                child: Text(l.getStarted),
-              ),
-              const SizedBox(height: 4),
-              Center(
-                child: TextButton(
-                  onPressed: () => ref.read(demoProvider.notifier).act((d) => d.stage = AuthStage.approved),
-                  child: Text(l.skipToDemo),
+              if (ref.watch(gateProvider) != Gate.demo)
+                const _GoogleSignInButton()
+              else ...[
+                FilledButton(
+                  onPressed: () => ref.read(demoProvider.notifier).act((d) => d.stage = AuthStage.phone),
+                  child: Text(l.getStarted),
                 ),
-              ),
+                const SizedBox(height: 4),
+                Center(
+                  child: TextButton(
+                    onPressed: () => ref.read(demoProvider.notifier).act((d) => d.stage = AuthStage.approved),
+                    child: Text(l.skipToDemo),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Shown while the real backend works out where a signed-in user belongs.
+class LoadingScreen extends StatelessWidget {
+  const LoadingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => const Scaffold(body: Center(child: CircularProgressIndicator()));
+}
+
+class _GoogleSignInButton extends ConsumerStatefulWidget {
+  const _GoogleSignInButton();
+
+  @override
+  ConsumerState<_GoogleSignInButton> createState() => _GoogleSignInButtonState();
+}
+
+class _GoogleSignInButtonState extends ConsumerState<_GoogleSignInButton> {
+  bool _busy = false;
+
+  Future<void> _signIn() async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(authRepoProvider).signInWithGoogle();
+    } catch (_) {
+      if (mounted) showSnack(context, context.l10n.signInFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.icon(
+      onPressed: _busy ? null : _signIn,
+      icon: _busy
+          ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+          : Container(
+              width: 22,
+              height: 22,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              child: const Text('G', style: TextStyle(color: Color(0xFF4285F4), fontWeight: FontWeight.w800)),
+            ),
+      label: Text(context.l10n.continueWithGoogle),
     );
   }
 }
@@ -257,37 +310,10 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(gateProvider) != Gate.demo) return const _BackendConsentScreen();
     final l = context.l10n;
-    Widget row(String type, bool value, ValueChanged<bool> onChanged) => AppCard(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.description_outlined, color: AppColors.primary),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(legalTitle(context, type), style: AppText.h3)),
-                  Text(l.legalVersion(kLegalVersion), style: AppText.tiny),
-                ],
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-                onPressed: () => context.push('/doc/$type'),
-                child: Text(l.legalRead),
-              ),
-              const SizedBox(height: 4),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                value: value,
-                onChanged: (v) => onChanged(v ?? false),
-                title: Text(l.legalAccept, style: AppText.body),
-              ),
-            ],
-          ),
-        );
+    Widget row(String type, bool value, ValueChanged<bool> onChanged) =>
+        LegalAcceptCard(type: type, version: kLegalVersion, value: value, onChanged: onChanged);
 
     return Scaffold(
       body: SafeArea(
@@ -318,30 +344,202 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
   }
 }
 
-/// S10 — legal document viewer. Body comes from the legal_document store (placeholder for now).
-class LegalDocScreen extends StatelessWidget {
-  const LegalDocScreen({super.key, required this.type});
+/// One document on the consent screen: title, version, "read", "I accept".
+class LegalAcceptCard extends StatelessWidget {
+  const LegalAcceptCard({
+    super.key,
+    required this.type,
+    required this.version,
+    required this.value,
+    required this.onChanged,
+  });
+
   final String type;
+  final String version;
+  final bool value;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return Scaffold(
-      appBar: AppBar(title: Text(legalTitle(context, type))),
-      body: PageBody(
+    return AppCard(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          StatusChip(l.legalVersion(kLegalVersion), tone: Tone.warn, icon: Icons.construction_rounded),
+          Row(
+            children: [
+              const Icon(Icons.description_outlined, color: AppColors.primary),
+              const SizedBox(width: 10),
+              Expanded(child: Text(legalTitle(context, type), style: AppText.h3)),
+              Text(l.legalVersion(version), style: AppText.tiny),
+            ],
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+            onPressed: () => context.push('/doc/$type'),
+            child: Text(l.legalRead),
+          ),
+          const SizedBox(height: 4),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            value: value,
+            onChanged: (v) => onChanged(v ?? false),
+            title: Text(l.legalAccept, style: AppText.body),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// S04 against Supabase: lists the current documents the user has not accepted yet
+/// (a new version re-opens only that document) and records the acceptance server-side.
+class _BackendConsentScreen extends ConsumerStatefulWidget {
+  const _BackendConsentScreen();
+
+  @override
+  ConsumerState<_BackendConsentScreen> createState() => _BackendConsentScreenState();
+}
+
+class _BackendConsentScreenState extends ConsumerState<_BackendConsentScreen> {
+  Future<List<LegalDoc>>? _docs;
+  String? _loadedLocale;
+  final _checked = <String>{};
+  bool _busy = false;
+
+  void _load(String locale) {
+    _loadedLocale = locale;
+    _docs = ref.read(authRepoProvider).pendingLegal(locale);
+  }
+
+  Future<void> _accept(List<LegalDoc> docs) async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(authRepoProvider).acceptLegal([for (final d in docs) d.type], _loadedLocale!);
+      await ref.read(gateProvider.notifier).refresh();
+    } catch (_) {
+      if (mounted) showSnack(context, context.l10n.loadFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final locale = ref.watch(localeProvider).languageCode;
+    if (locale != _loadedLocale) _load(locale);
+
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+          child: FutureBuilder<List<LegalDoc>>(
+            future: _docs,
+            builder: (context, snap) {
+              if (snap.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snap.hasError) {
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    InfoBanner(l.loadFailed, icon: Icons.cloud_off_rounded, tone: Tone.warn),
+                    const SizedBox(height: 12),
+                    OutlinedButton(onPressed: () => setState(() => _load(locale)), child: Text(l.retry)),
+                  ],
+                );
+              }
+              final docs = snap.data!;
+              final allChecked = docs.every((d) => _checked.contains(d.type));
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: TextButton(onPressed: () => signOutEverywhere(ref), child: Text(l.logOut)),
+                  ),
+                  Text(l.legalTitle, style: AppText.h1),
+                  const SizedBox(height: 6),
+                  Text(l.legalSubtitle, style: AppText.body.copyWith(color: AppColors.inkSoft)),
+                  const SizedBox(height: 18),
+                  for (final d in docs)
+                    LegalAcceptCard(
+                      type: d.type,
+                      version: d.version,
+                      value: _checked.contains(d.type),
+                      onChanged: (v) => setState(() => v ? _checked.add(d.type) : _checked.remove(d.type)),
+                    ),
+                  if (docs.any((d) => d.version == kLegalVersion))
+                    InfoBanner(l.legalPlaceholderNote, icon: Icons.construction_rounded, tone: Tone.warn),
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: allChecked && !_busy
+                        ? () => docs.isEmpty ? ref.read(gateProvider.notifier).refresh() : _accept(docs)
+                        : null,
+                    child: Text(l.legalAcceptContinue),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// S10 — legal document viewer. Body comes from the legal_document store (placeholder for now).
+class LegalDocScreen extends ConsumerWidget {
+  const LegalDocScreen({super.key, required this.type});
+  final String type;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final locale = ref.watch(localeProvider).languageCode;
+    Widget page(String version, String body) {
+      final placeholder = version == kLegalVersion;
+      return PageBody(
+        children: [
+          StatusChip(l.legalVersion(version),
+              tone: placeholder ? Tone.warn : Tone.neutral,
+              icon: placeholder ? Icons.construction_rounded : Icons.description_outlined),
           const SizedBox(height: 16),
           AppCard(
             child: Directionality(
-              textDirection: TextDirection.ltr,
-              child: Text(kLegalPlaceholder, style: AppText.body),
+              textDirection: placeholder ? TextDirection.ltr : Directionality.of(context),
+              child: SelectableText(body, style: AppText.body),
             ),
           ),
-          const SizedBox(height: 14),
-          InfoBanner(l.legalPlaceholderNote, icon: Icons.construction_rounded, tone: Tone.warn),
+          if (placeholder) ...[
+            const SizedBox(height: 14),
+            InfoBanner(l.legalPlaceholderNote, icon: Icons.construction_rounded, tone: Tone.warn),
+          ],
         ],
-      ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: Text(legalTitle(context, type))),
+      body: ref.watch(gateProvider) == Gate.demo
+          ? page(kLegalVersion, kLegalPlaceholder)
+          : FutureBuilder<LegalDoc?>(
+              future: ref.read(authRepoProvider).currentDoc(type, locale),
+              builder: (context, snap) {
+                if (snap.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final doc = snap.data;
+                if (doc == null) {
+                  return PageBody(children: [InfoBanner(l.loadFailed, icon: Icons.cloud_off_rounded, tone: Tone.warn)]);
+                }
+                return page(doc.version, doc.body);
+              },
+            ),
     );
   }
 }
@@ -366,6 +564,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(gateProvider) != Gate.demo) return const BackendJoinScreen();
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     return Scaffold(
@@ -500,6 +699,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(gateProvider) != Gate.demo) return const BackendApplyScreen();
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     final decls = [l.decl1, l.decl2, l.decl3, l.decl4, l.decl5];
@@ -619,6 +819,7 @@ class PendingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(gateProvider) != Gate.demo) return const BackendPendingScreen();
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     final mine = d.applications.where((a) => a.isMine).toList();
@@ -663,7 +864,7 @@ class PendingScreen extends ConsumerWidget {
               ),
               Center(
                 child: TextButton(
-                  onPressed: () => ref.read(demoProvider.notifier).act((d) => d.stage = AuthStage.welcome),
+                  onPressed: () => signOutEverywhere(ref),
                   child: Text(l.logOut),
                 ),
               ),

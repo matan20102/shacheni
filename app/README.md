@@ -23,6 +23,12 @@ copy config\example.json config\dev.json   # then fill in the Project URL + publ
 flutter run -d chrome --dart-define-from-file=config/dev.json
 ```
 
+With the config file, sign-in is **real** (Google via Supabase Auth) and so is the legal consent step; the steps after it (join building → application → pending) still use demo data. Google redirects back to `http://localhost:8080`, so use that port:
+
+```powershell
+flutter run -d web-server --web-port 8080 --dart-define-from-file=config/dev.json   # then open http://localhost:8080
+```
+
 Settings → Demo → **Server** shows *Connected to Supabase*, *Not configured* (no config file → pure demo) or *Can't reach the server* (tap to retry). Only the **publishable** key ever goes in the app — never the secret/service-role key or the DB password.
 
 Quality checks: `flutter analyze` · `flutter test` · `flutter build web`.

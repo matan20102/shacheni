@@ -8,7 +8,9 @@ import '../../core/status.dart';
 import '../../core/widgets.dart';
 import '../../data/demo_data.dart';
 import '../../data/models.dart';
+import '../../data/auth.dart';
 import '../../data/providers.dart';
+import 'backend_admin_screens.dart';
 import '../packages/door_delivery.dart' show SamplePhoto;
 
 /// A01 — admin dashboard (building admin; in the pilot that is you).
@@ -17,6 +19,7 @@ class AdminDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(gateProvider) != Gate.demo) return const BackendAdminDashboard();
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     final openDisputes = d.disputes.where((x) => !x.resolved).length;
@@ -101,6 +104,7 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(gateProvider) != Gate.demo) return const BackendApplicationsScreen();
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     final lang = context.lang;
@@ -164,6 +168,7 @@ class _ApplicationReviewScreenState extends ConsumerState<ApplicationReviewScree
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(gateProvider) != Gate.demo) return BackendApplicationReviewScreen(id: widget.id);
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     final a = d.applications.firstWhere((x) => x.id == widget.id);
@@ -643,6 +648,7 @@ class BuildingSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(gateProvider) != Gate.demo) return const BackendBuildingSettingsScreen();
     final l = context.l10n;
     final d = ref.watch(demoProvider).data;
     final lang = context.lang;
