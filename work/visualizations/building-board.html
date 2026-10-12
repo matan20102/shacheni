@@ -1,0 +1,351 @@
+<div id="shacheni-board-preview" dir="rtl" lang="he" aria-label="לוח הבניין — בועות וחלונית תגובות">
+  <style>
+    #shacheni-board-preview {
+      color-scheme: light dark;
+      --sb-page: light-dark(#f5f5f1, #192321);
+      --sb-paper: light-dark(#ffffff, #26332f);
+      --sb-own: light-dark(#e2eee7, #294b3d);
+      --sb-ink: light-dark(#20342d, #edf5f0);
+      --sb-muted: light-dark(#56685f, #b7c8bf);
+      --sb-line: light-dark(#dbe3dd, #42564b);
+      --sb-teal: light-dark(#216d5e, #b1e4d1);
+      --sb-shade: light-dark(rgba(25, 40, 32, .26), rgba(0, 0, 0, .48));
+      --sb-radius: 18px;
+      font-family: "Heebo", "Arial", sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--sb-ink);
+    }
+    #shacheni-board-preview * { box-sizing: border-box; }
+    #shacheni-board-preview .sb-phone {
+      position: relative;
+      width: 100%;
+      max-width: 410px;
+      margin: 0 auto;
+      background: var(--sb-page);
+      border: 1px solid var(--sb-line);
+      border-radius: 24px;
+    }
+    #shacheni-board-preview .sb-header {
+      padding: 20px 20px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--sb-line);
+    }
+    #shacheni-board-preview .sb-title { font-size: 22px; font-weight: 500; }
+    #shacheni-board-preview .sb-address { font-size: 13px; color: var(--sb-muted); }
+    #shacheni-board-preview .sb-logo { color: var(--sb-teal); font-weight: 500; }
+    #shacheni-board-preview .sb-day {
+      padding: 15px 20px 0;
+      text-align: center;
+      font-size: 13px;
+      color: var(--sb-muted);
+    }
+    #shacheni-board-preview .sb-feed {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      direction: ltr;
+      gap: 17px;
+      padding: 18px 16px 24px;
+    }
+    #shacheni-board-preview .sb-bubble {
+      direction: rtl;
+      width: 88%;
+      background: var(--sb-paper);
+      border: 1px solid var(--sb-line);
+      border-radius: var(--sb-radius) var(--sb-radius) var(--sb-radius) 5px;
+      padding: 13px 14px 9px;
+    }
+    #shacheni-board-preview .sb-bubble.sb-mine {
+      align-self: flex-end;
+      background: var(--sb-own);
+      border-radius: var(--sb-radius) var(--sb-radius) 5px var(--sb-radius);
+    }
+    #shacheni-board-preview .sb-author {
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    #shacheni-board-preview .sb-label { font-weight: 400; color: var(--sb-muted); }
+    #shacheni-board-preview button, #shacheni-board-preview input {
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+    }
+    #shacheni-board-preview button { cursor: pointer; }
+    #shacheni-board-preview .sb-open {
+      display: block;
+      text-align: right;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      padding: 9px 0;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    #shacheni-board-preview .sb-footer {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    #shacheni-board-preview .sb-small-button {
+      background: transparent;
+      border: 1px solid var(--sb-line);
+      border-radius: 16px;
+      padding: 5px 10px;
+      min-height: 36px;
+      font-size: 13px;
+    }
+    #shacheni-board-preview .sb-small-button[aria-pressed="true"] {
+      background: var(--sb-own);
+      border-color: var(--sb-teal);
+    }
+    #shacheni-board-preview .sb-time {
+      margin-inline-start: auto;
+      color: var(--sb-muted);
+      font-size: 12px;
+    }
+    #shacheni-board-preview .sb-status { color: var(--sb-teal); font-size: 13px; }
+    #shacheni-board-preview [hidden] { display: none !important; }
+    #shacheni-board-preview .sb-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: var(--sb-shade);
+      border-radius: 24px;
+    }
+    #shacheni-board-preview .sb-sheet {
+      position: absolute;
+      bottom: 0;
+      inset-inline: 0;
+      background: var(--sb-paper);
+      border-radius: 22px 22px 24px 24px;
+      padding: 18px;
+      color: var(--sb-ink);
+    }
+    #shacheni-board-preview[data-popup="center"] .sb-sheet {
+      bottom: auto;
+      top: 50%;
+      transform: translateY(-50%);
+      inset-inline: 12px;
+      border-radius: 22px;
+    }
+    #shacheni-board-preview .sb-sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    #shacheni-board-preview .sb-sheet-title { font-weight: 500; }
+    #shacheni-board-preview .sb-close {
+      display: grid;
+      place-items: center;
+      border: 0;
+      background: transparent;
+      width: 40px;
+      height: 40px;
+    }
+    #shacheni-board-preview .sb-context {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--sb-page);
+      margin-bottom: 8px;
+    }
+    #shacheni-board-preview .sb-replies { margin: 0; padding: 0; list-style: none; }
+    #shacheni-board-preview .sb-reply { padding: 10px 0; border-bottom: 1px solid var(--sb-line); }
+    #shacheni-board-preview .sb-reply-name { color: var(--sb-muted); font-size: 13px; }
+    #shacheni-board-preview .sb-compose {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    #shacheni-board-preview .sb-compose input {
+      flex: 1 1 160px;
+      min-width: 0;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--sb-line);
+      border-radius: 12px;
+      background: var(--sb-page);
+      font-size: 16px;
+    }
+    #shacheni-board-preview .sb-send, #shacheni-board-preview .sb-resolve {
+      padding: 10px 14px;
+      border: 1px solid var(--sb-line);
+      background: var(--sb-own);
+      border-radius: 12px;
+      font-weight: 500;
+    }
+    #shacheni-board-preview .sb-resolve { width: 100%; margin-top: 12px; }
+    #shacheni-board-preview .sb-live { font-size: 13px; color: var(--sb-teal); margin-top: 8px; }
+    @media (pointer: coarse) {
+      #shacheni-board-preview .sb-small-button, #shacheni-board-preview .sb-close { min-height: 44px; }
+    }
+  </style>
+  <div class="sb-phone">
+    <div class="sb-content">
+      <header class="sb-header">
+        <div><div class="sb-title">לוח הבניין</div><div class="sb-address">הרצל 12</div></div>
+        <span class="sb-logo">שכני</span>
+      </header>
+      <div class="sb-day">היום</div>
+      <div class="sb-feed">
+        <article class="sb-bubble" data-post="committee">
+          <div class="sb-author"><span>ועד הבית</span><span class="sb-label">📌 נעוצה</span></div>
+          <button type="button" class="sb-open" data-open="committee">מחר ב־19:00 נפגשים בלובי לדבר על שיפוץ הכניסה. נשמח לראות אתכם 🙂</button>
+          <div class="sb-footer">
+            <button type="button" class="sb-small-button" data-open="committee" aria-label="פתיחת תגובות להודעת הוועד">💬 <span data-count="committee">1</span> תגובות</button>
+            <button type="button" class="sb-small-button" data-reaction="committee" aria-pressed="false" aria-label="תגובה באימוג׳י להודעת הוועד">👍 <span>4</span></button>
+            <span class="sb-time">09:00</span>
+          </div>
+        </article>
+        <article class="sb-bubble sb-mine" data-post="milk">
+          <div class="sb-author"><span>אני · דירה 12</span><span class="sb-label">בקשה</span></div>
+          <button type="button" class="sb-open" data-open="milk">מישהו יכול להביא לי חלב? אני עם הילדים בבית 🙏</button>
+          <div class="sb-footer">
+            <button type="button" class="sb-small-button" data-open="milk" aria-label="פתיחת תגובות לבקשת החלב">💬 <span data-count="milk">2</span> תגובות</button>
+            <button type="button" class="sb-small-button" data-reaction="milk" aria-pressed="false" aria-label="תגובה באימוג׳י לבקשת החלב">❤️ <span>2</span></button>
+            <span class="sb-time">14:10</span>
+          </div>
+          <div class="sb-status" data-status="milk" hidden>✓ נפתר</div>
+        </article>
+        <article class="sb-bubble" data-post="package">
+          <div class="sb-author"><span>יעל · דירה 8</span><span class="sb-label">בקשה</span></div>
+          <button type="button" class="sb-open" data-open="package">מישהו עובר ליד הדואר ויכול לאסוף לי חבילה?</button>
+          <div class="sb-footer">
+            <button type="button" class="sb-small-button" data-open="package" aria-label="פתיחת תגובות לבקשת החבילה">💬 <span data-count="package">2</span> תגובות</button>
+            <span class="sb-status">✓ נפתר</span>
+            <span class="sb-time">11:40</span>
+          </div>
+        </article>
+      </div>
+    </div>
+    <div class="sb-overlay" hidden>
+      <section class="sb-sheet" role="dialog" aria-modal="true" aria-labelledby="sb-replies-title">
+        <div class="sb-sheet-header">
+          <div class="sb-sheet-title" id="sb-replies-title">תגובות</div>
+          <button type="button" class="sb-close" aria-label="סגירת חלונית התגובות"><i data-lucide="x" aria-hidden="true"></i></button>
+        </div>
+        <div class="sb-context"></div>
+        <ul class="sb-replies" aria-label="תגובות לפרסום"></ul>
+        <form class="sb-compose">
+          <input type="text" maxlength="140" aria-label="תגובה קצרה" placeholder="כתיבת תגובה…" required>
+          <button type="submit" class="sb-send">שליחה</button>
+        </form>
+        <button type="button" class="sb-resolve" hidden>✓ סימון כנפתר</button>
+        <div class="sb-live" aria-live="polite"></div>
+      </section>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const root = document.getElementById('shacheni-board-preview');
+      const overlay = root.querySelector('.sb-overlay');
+      const content = root.querySelector('.sb-content');
+      const sheet = root.querySelector('.sb-sheet');
+      const replies = root.querySelector('.sb-replies');
+      const input = root.querySelector('.sb-compose input');
+      const closeButton = root.querySelector('.sb-close');
+      const resolveButton = root.querySelector('.sb-resolve');
+      const live = root.querySelector('.sb-live');
+      const posts = {
+        committee: { mine: false, solved: false, replies: [['אורן · דירה 3', 'נגיע, תודה על העדכון!']] },
+        milk: { mine: true, solved: false, replies: [['אורן · דירה 3', 'אני בסופר, אביא לך עוד חצי שעה.'], ['אני · דירה 12', 'תודה רבה! 🙏']] },
+        package: { mine: false, solved: true, replies: [['אורן · דירה 3', 'אני בדרך לדואר, אאסוף לך.'], ['יעל · דירה 8', 'קיבלתי את החבילה, תודה!']] }
+      };
+      let currentId = null;
+      let opener = null;
+      function renderReplies() {
+        replies.replaceChildren();
+        const post = posts[currentId];
+        post.replies.slice(-3).forEach(([name, text]) => {
+          const item = document.createElement('li');
+          item.className = 'sb-reply';
+          const author = document.createElement('div');
+          author.className = 'sb-reply-name';
+          author.textContent = name;
+          const body = document.createElement('div');
+          body.textContent = text;
+          item.append(author, body);
+          replies.append(item);
+        });
+        root.querySelector('[data-count="' + currentId + '"]').textContent = post.replies.length;
+        resolveButton.hidden = !post.mine;
+        resolveButton.textContent = post.solved ? 'פתיחה מחדש של הבקשה' : '✓ סימון כנפתר';
+      }
+      function open(id, button) {
+        currentId = id;
+        opener = button;
+        root.querySelector('.sb-context').textContent = root.querySelector('.sb-open[data-open="' + id + '"]').textContent;
+        live.textContent = '';
+        input.value = '';
+        renderReplies();
+        overlay.hidden = false;
+        content.inert = true;
+        closeButton.focus();
+      }
+      function close() {
+        overlay.hidden = true;
+        content.inert = false;
+        if (opener) opener.focus();
+      }
+      root.querySelectorAll('[data-open]').forEach(button => button.addEventListener('click', () => open(button.dataset.open, button)));
+      root.querySelectorAll('[data-reaction]').forEach(button => button.addEventListener('click', () => {
+        const selected = button.getAttribute('aria-pressed') === 'true';
+        const count = button.querySelector('span');
+        count.textContent = Number(count.textContent) + (selected ? -1 : 1);
+        button.setAttribute('aria-pressed', String(!selected));
+      }));
+      closeButton.addEventListener('click', close);
+      overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+      sheet.addEventListener('keydown', event => {
+        if (event.key === 'Escape') close();
+        if (event.key !== 'Tab') return;
+        const items = Array.from(sheet.querySelectorAll('button:not([hidden]), input'));
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      });
+      root.querySelector('.sb-compose').addEventListener('submit', event => {
+        event.preventDefault();
+        const value = input.value.trim();
+        if (!value) return;
+        posts[currentId].replies.push(['אני · דירה 12', value]);
+        input.value = '';
+        renderReplies();
+        live.textContent = 'התגובה נוספה';
+      });
+      resolveButton.addEventListener('click', () => {
+        const post = posts[currentId];
+        post.solved = !post.solved;
+        root.querySelector('[data-status="milk"]').hidden = !post.solved;
+        renderReplies();
+        live.textContent = post.solved ? 'הבקשה סומנה כנפתרה' : 'הבקשה פתוחה שוב';
+      });
+      const design = { radius: 18, popup: 'bottom' };
+      function renderDesign() {
+        root.style.setProperty('--sb-radius', design.radius + 'px');
+        root.dataset.popup = design.popup;
+      }
+      renderDesign();
+      if (globalThis.Tweak) {
+        const tweak = new Tweak({ container: root, onChange: renderDesign });
+        tweak.addSlider(design, 'radius', { label: 'עיגול הבועות', min: 10, max: 26, unit: 'px' });
+        tweak.addSelect(design, 'popup', { label: 'חלונית התגובות', options: [{ label: 'נפתחת מלמטה', value: 'bottom' }, { label: 'חלונית במרכז', value: 'center' }] });
+      }
+    })();
+  </script>
+</div>
