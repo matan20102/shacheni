@@ -1,70 +1,102 @@
-# Shacheni (שכני) — Flutter app (visual prototype v0.1)
+# נייבור (NAYBOR) — Flutter
 
-Clickable prototype of the Shacheni app: **Hebrew-first (RTL) + English (LTR)**, built from the product specification in [`../docs`](../docs/PRD.md). It runs on **sample data held in memory** — nothing you do is saved. The Supabase client is wired in (dev project `shacheni-dev`), but no screen reads or writes the database yet (schema = Phase 5, screens = Phase 8+).
+הכיוון הנוכחי הוא ניהול בניין בעברית וב־RTL, עם עיצוב Glass. החלטות המוצר נמצאות ב־[אפיון ניהול הבניין](../docs/PRD-building-management-draft.md), ומצב האימות ב־[היערכות למימוש](../docs/implementation-readiness.md).
 
-## Run it
+שם המוצר מרוכז ב־`lib/app/brand.dart`; התרגומים ומטא־דאטה ההתקנה כוללים גם את שמות הפלטפורמות. מזהה החבילה וסכמת חזרת Google נשארים קבועים. ב־15 באוקטובר הותקנה באייפון בנייה `0.1.0+6`, עם עותק Release מאומת ב־`build/ios/releases/naybor-approval-updates-20261015/Runner.app`.
 
-Flutter is installed at `C:\src\flutter` (not on PATH). From this folder:
+מספר הבית הוא שדה חופשי נפרד מהרחוב והעיר; מספר הדירה מספרי וייחודי בכל הבניין, ללא בחירת כניסה. טופס ההצטרפות מזהה בית קיים ומסתיר את שדה השם; בבית חדש שם אופציונלי ממתין לאישור. [בדיקות ידניות עם הקוד CHECK](../docs/check-building-testing.md).
 
-```powershell
-$env:Path = "C:\src\flutter\bin;" + $env:Path
-flutter pub get
-flutter run -d chrome                       # opens the app in Chrome (phone-sized frame on wide screens)
-flutter run -d chrome --dart-define=DEMO_SIGNED_IN=true   # skip onboarding, start on Home
-flutter run -d chrome --dart-define=DEMO_LOCALE=en        # force English (default: device language → Hebrew)
+הגרסה כוללת סנכרון שקט בחזית כל 20 שניות ובחזרה לאפליקציה, השלמת כתובת מקומית מהמאגר הממשלתי, שם משותף לדירה, יצירה והצטרפות ללא חלוקה לכניסות ולוח קומפקטי. המודעות מיושרות למעלה; לוח ארוך נפתח בלא־נקרא או במודעה האחרונה. לחדש את קובץ הכתובות: `python3 tool/update_israel_addresses.py`; ההקלדה אינה נשלחת לספק כתובות חיצוני.
+
+הפעמון אינו סופר בקשות שהמשתמש שלח. קבלה לבניין מוצגת מתוך `ba_state.approval_updates`; פתיחת החלונית שומרת את העדכונים המוצגים כנקראו באמצעות `ba_read_approval_updates`. התוכן נשאר בחלונית בזמן הקריאה. למנהלים נספרות רק בקשות שעדיין מצריכות אישור שלהם.
+
+`BoardTimeline` מציג את המודעות מלמעלה, ומפריד את מיקום פתיחת הקריאה מהיישור. `board_read_store.dart` שומר במכשיר מיקום לפי חשבון ובניין: אם יש חדש נפתחים ב״לא נקרא״; אחרת בלוח ארוך נפתחים במודעה האחרונה. לוח קצר נשאר מיושר למעלה. הקריאה אינה מסונכרנת בין מכשירים ואינה מוסיפה סימון לפעמון.
+
+עדכון הלוח מוכן בגרסת `0.1.0+7`: `build/ios/releases/naybor-board-reading-20261015/Runner.app`, עם אימות חתימה ומטא־דאטה ב־`verification.json`. ההתקנה נדחתה לבקשת המשתמש. גרסת המקור הנוכחית היא `0.1.0+8`, עם ניקוי המסלול הישן ותיקון טעינת האתחול. אין להתקין באייפון עד בקשה חדשה.
+
+## הפעלה מקומית
+
+מתוך תיקיית `app`:
+
+```bash
+flutter run -d chrome
 ```
 
-### Connecting to Supabase (dev)
+ללא הגדרות Supabase נפתחת גרסת הדגמה בזיכרון. אפשר ליצור בניינים, לפרסם ולהגיב בלוח, ולבדוק את הצטרפות המנהלים; הנתונים המקומיים אינם נשמרים אחרי סגירה. הקוד `NEIGHBOR` מדגים הצטרפות: בדירות 1, 2 ו־12 נדרשים שני אישורים.
 
-Config comes from a JSON file passed at build time — no URL or key in the code. `config/*.json` is git-ignored except the template:
+## המסלול המחובר
 
-```powershell
-copy config\example.json config\dev.json   # then fill in the Project URL + publishable key
-flutter run -d chrome --dart-define-from-file=config/dev.json
+`config/building-dev.json` הוא קובץ פיתוח מוחרג מגיט, עם `SUPABASE_URL` ו־`SUPABASE_PUBLISHABLE_KEY`. התבנית `config/example.json` נמצאת בגיט. אין להכניס מפתח שירות או סיסמת דיבי לאפליקציה. דגלי `BUILDING_LIVE` ו־`BUILDING_PREVIEW` הוסרו ואינם נדרשים.
+
+```bash
+flutter run -d chrome --dart-define-from-file=config/building-dev.json
 ```
 
-With the config file, sign-in is **real** (Google via Supabase Auth) and so is the legal consent step; the steps after it (join building → application → pending) still use demo data. Google redirects back to `http://localhost:8080`, so use that port:
+המסלול המחובר כולל Google, אישור מסמכים, יצירת בניין, חברות בכמה בניינים, בקשות הצטרפות ואישורי מנהלי בניין/דירה, ולוח עם תגובות ואימוג׳ים. הוא שומר נתונים בשרת באמצעות RPC ומבודד את הבניינים באמצעות הרשאות ו־RLS. זהו המסלול היחיד בבנייה עם Supabase, גם ב־Netlify.
 
-```powershell
-flutter run -d web-server --web-port 8080 --dart-define-from-file=config/dev.json   # then open http://localhost:8080
+## בדיקה באייפון מחובר
+
+```bash
+flutter devices
+flutter run -d <DEVICE_ID> --dart-define-from-file=config/building-dev.json
 ```
 
-Settings → Demo → **Server** shows *Connected to Supabase*, *Not configured* (no config file → pure demo) or *Can't reach the server* (tap to retry). Only the **publishable** key ever goes in the app — never the secret/service-role key or the DB password.
+לבנייה שאפשר לפתוח גם בלי המחשב:
 
-Quality checks: `flutter analyze` · `flutter test` · `flutter build web`.
-
-## What you can click through
-
-| Area | Screens (spec IDs) |
-|---|---|
-| Onboarding | Welcome · Phone · OTP (any code works) · Legal consent (TODO placeholder text) · Join building (code `SHACH-26`) · Application form · Pending (demo "approve me") — S01–S10 |
-| Home | Needs-your-action cards, quick actions, parking available, pickup requests — S11 |
-| Parking | Find · listing · request/instant · publish · my parking · owner requests · reservation detail + confirm · my spaces / request assignment — S12–S21 |
-| Packages | Help list · new request (door-delivery permission) · offers · accept · helper job · **handoff code entry with 5-attempt lock** · **door delivery with photo proof** · photo viewer — S22–S30, S42, S43 |
-| Money | Mock payment panel (*I paid* → *Payment received*), transaction detail, history — S31, S32, S40 |
-| Cross-cutting | Rate · cancel sheet · report a problem · neighbor profile · notifications — S33–S37 |
-| Me | Profile · settings (language switch he/en, legal docs, demo tools) — S38–S41 |
-| Admin (you) | Dashboard · applications review (self-approval flagged) · parking assignments · disputes · activity · stats · building settings (join code + poster) — A01–A12 |
-| Platform (you) | Buildings · create-building wizard — P01–P02 |
-
-Dashed orange **"Demo: …"** buttons simulate the *other* party's action (e.g. "Dana accepts", "the helper arrives"), so every flow can be walked alone. Hide them in Settings → Demo.
-
-## Layout
-
-```
-lib/
-  main.dart · app/ (router, theme tokens, app shell)
-  l10n/            app_he.arb (template) + app_en.arb  → generated AppL10n (gen-l10n)
-  core/            formatting (money/date/bidi-safe), shared widgets, status mapping
-  data/            models + DemoData (in-memory stand-in for the RPCs) + Riverpod providers
-  features/        access · home · parking · packages · money · common · me · admin · platform
-test/              widget smoke test (Hebrew RTL) + rule tests (code lock, door delivery, offers…)
-assets/fonts/      Heebo (bundled, OFL)
+```bash
+flutter run --release -d <DEVICE_ID> -t lib/main.dart --dart-define-from-file=config/building-dev.json
 ```
 
-## Notes for the next phases
+אם כלי Flutter נכשל בהתקנה/ההפעלה, בונים במפורש חבילת Release לפני התקנה דרך כלי Xcode. אין להשתמש בחבילת `Runner.app` שנותרה מבדיקת Debug:
 
-- `data/demo_data.dart` mirrors the server rules (RPC names in comments). In Phase 8 it is replaced by repository implementations on Supabase; screens keep their widgets.
-- **Localization:** every visible string is in the ARB files — no literals in widgets. gen-l10n orders multi-placeholder arguments **alphabetically by placeholder name** (e.g. `actPayReceived(amount, name)`). Keep that in mind when adding strings.
-- Legal documents: the app shows only the placeholder `TODO — legal text to be provided by the owner` (`features/access/access_screens.dart`); the versioned document store is specified in the architecture doc.
-- iOS builds require macOS (Xcode); this Windows machine can build and run **web** and (once the Android SDK is installed) **Android**. iOS/TestFlight builds will go through a macOS CI runner or a Mac.
+```bash
+flutter build ios --release -t lib/main.dart --dart-define-from-file=config/building-dev.json
+xcrun devicectl device install app --device <DEVICE_ID> build/ios/iphoneos/Runner.app
+xcrun devicectl device process launch --device <DEVICE_ID> --terminate-existing com.shacheni.shacheniApp
+```
+
+האייפון צריך להיות פתוח בזמן ההפעלה. `--terminate-existing` סוגר את התהליך הקודם לפני פתיחת החבילה שהותקנה. ב־Debug צריך להריץ באמצעות Flutter/Xcode; לשימוש מהאייקון משתמשים ב־Release. התקנה מוצלחת אינה מאמתת את המסך: משלימים גם סגירה ופתיחה מהאייקון, כניסה ב־Google ויצירת בניין.
+
+עותקי Release חתומים נשמרים מקומית תחת `build/ios/releases/`, עם `verification.json` לכל עותק. יש לבחור את הגרסה העדכנית שאומתה, כדי להימנע מהתקנת בניית Debug שנותרה מבדיקה קודמת. אין צורך להתקין עותקים היסטוריים.
+
+להתקנה ישירה נדרשת חתימה תקפה ב־Xcode. בפרויקט נשמרו הגדרות החתימה המקומיות של המשתמש. חזרת Google לאפליקציה רשומה ב־`ios/Runner/Info.plist`; אותה כתובת צריכה להופיע ב־Supabase → Authentication → URL Configuration → Redirect URLs:
+
+```text
+com.shacheni.shacheniapp://login-callback
+```
+
+מוסיפים את הכתובת הזו עצמה לרשימת **Redirect URLs**, ולא את הקישור לדף ההגדרות. אם בחירת חשבון Google מסתיימת ב־Safari על `localhost`, בודקים שהכתובת המדויקת נשמרה, ואז מתחילים כניסה חדשה מתוך האפליקציה.
+
+באייפון הכניסה נפתחת בחלון האימות המקורי של iOS מעל נייבור (`ASWebAuthenticationSession`), שנסגר כשכתובת החזרה מגיעה. `SystemWebAuth` מקבל את התוצאה דרך גשר iOS ו־Supabase מחליף את קוד ה־PKCE ושומר את ההתחברות. סגירת החלון מבטלת את הניסיון ומאפשרת כניסה חוזרת. לבדיקה ידנית, יוצאים מהחשבון ונכנסים שוב: בחירת Google צריכה להופיע מעל נייבור בלי מעבר לאפליקציית Safari. בודקים גם ביטול והתחלת ניסיון חדש.
+
+אחרי ההתקנה פותחים **נייבור**, נכנסים עם אותו Google שבו משתמשים בדפדפן, ויוצרים בניין בדיקה. כדאי לבדוק מספר דירה כגון `12`, דחיית אותיות בשדה הדירה, מספר בית חופשי כגון `216 כניסה א׳`, שם בניין ריק, פרסום, תגובה, סגירת חלונית, סיבוב המסך ומעבר בין בניינים. נתונים שנשמרו אמורים להופיע גם בדפדפן אחרי הסנכרון.
+
+## בדיקות
+
+```bash
+flutter test
+dart analyze
+flutter test integration_test/building_flow_test.dart -d <SIMULATOR_ID>
+```
+
+בדיקת האינטגרציה משתמשת בנתונים מקומיים, בלי שינוי בדיבי המשותף. היא בודקת רצף UI מקורי של iOS: יצירה, פרסום, תגובה ומעבר בניינים. היא אינה בדיקת OAuth או API מלאים.
+
+בדיקות SQL:
+
+```bash
+cd ../supabase/tests/local/pglite
+npm ci
+npm test
+```
+
+## מבנה עיקרי
+
+- `lib/features/building/`: המסכים, האישור, הכניסה ועיצוב הזכוכית.
+- `lib/data/building/`: מודלים, ViewModel, מאגר מקומי ומתאם Supabase.
+- `test/`: בדיקות רכיבים, נתונים, הרשאות UI ותגובה לשגיאות.
+- `integration_test/`: בדיקת תהליך בסימולטור או במכשיר.
+- `../supabase/`: מיגרציות ובדיקות הרשאות/נתונים.
+
+קוד האב־טיפוס הישן, הניווט שלו, מודלי ההדגמה והתרגומים שלא בשימוש הוסרו. חניה, גביית ועד, פניות פרטיות, מינוי מנהלים נוספים והתראות מלאות עדיין דורשים המשך מימוש. כרטיסי ״בהמשך״ הנוכחיים מבהירים מה עוד לא זמין; אין חיבור למסלולי ההדגמה הישנים. היסטוריית המיגרציות בשרת נשמרה כדי לא לשבור משתמשים ונתונים קיימים.
+
+לבדיקות עם חברים ולמידע על מיקום Supabase ראו [הפצת בטא ותשתית](../docs/beta-distribution.md).

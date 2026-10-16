@@ -24,6 +24,51 @@ Schema changes happen **only** through the migration files here, never by editin
 
 **Not built yet:** the parking / package / payment RPCs, the views (`public_profile_v`, admin views), `pg_cron` ticks, Edge Functions. They come flow by flow; next is parking.
 
+## Building-management experience (new product)
+
+`migrations/20261013093248_building_management.sql` adds a separate membership and
+board module while reusing existing profile/building/apartment identities. It was
+applied to the dev project. Existing buildings/memberships are not automatically
+enrolled. Create a new building through `ba_create`; this atomically grants the
+creator separate building-admin, committee, and apartment-admin roles.
+
+New RPCs: `ba_state`, `ba_create`, `ba_resolve`, `ba_join`, `ba_approve`,
+`ba_withdraw`, `ba_board`, `ba_publish`, `ba_post_action`. Public RPCs are security
+invokers; checked implementations are in private `app`. The new tables are
+read-only to authenticated clients under RLS, with no anonymous privileges.
+Existing apartments need both building and apartment approval; approval locks the
+building and apartment before choosing the first apartment admin.
+
+`tests/building_management_test.sql` adds 48 checks, including both approval
+orders, two applicants to a new apartment, authorization, metadata spoofing,
+cross-building reads/writes, direct-DML denial and closed/deleted posts.
+
+The household and apartment-detail migrations add `community_household`,
+`community_apartment`, `ba_create_home_v2`, `ba_apartment_status`, `ba_apply_home`
+and `ba_set_household`. Apartment numbers are numeric in the new API and unique
+per building; entrances are optional metadata. Lookup discloses only existence
+and manager status. A proposed name is staged on a new-home request and committed
+only when its first manager is approved. Existing names cannot be replaced by a
+join request, including two requests competing to open the same home.
+
+All 334 SQL checks pass locally. The explicit, idempotent development fixture in
+`fixtures/check_building.sql` creates the marked CHECK building and three
+credential-free test identities. It is never applied automatically with schema
+migrations. See [the testing guide](../docs/check-building-testing.md).
+
+All SQL suites can also run without a PostgreSQL install or Docker:
+
+```bash
+cd supabase/tests/local/pglite
+npm ci
+npm test
+```
+
+This adapter expands the existing `psql` include directives and runs the same
+migrations and tests in an isolated PostgreSQL/WASM instance. The pinned PGlite
+version uses PostgreSQL 18.6; the Supabase dev project uses PostgreSQL 17. It does
+not validate true concurrent transactions or substitute for load testing.
+
 ## Run the tests locally (no Docker)
 
 Needs any local PostgreSQL 17 server. `tests/local/supabase_stub.sql` fakes the Supabase pieces the migrations use (`auth.users`, `auth.uid()`, `storage.*`, roles):
@@ -35,6 +80,13 @@ PGBIN="/path/to/pgsql/bin" PGPORT=5432 supabase/tests/local/run_tests.sh
 The script rebuilds a throwaway `shacheni_test` database from the migrations, then runs every `tests/*_test.sql` (each inside a rolled-back transaction).
 
 ## Conventions
+
+`20261015105958_membership_approval_updates.sql` extends `ba_state` with unread
+acceptance updates for the caller's currently approved memberships. The new
+`ba_read_approval_updates(uuid[])` marks only the caller's acceptance updates
+as read; direct notification UPDATE stays denied. Outgoing pending requests
+are status items, not unread updates. Eighteen SQL checks cover consent,
+partial versus full approval, user isolation and persistent acknowledgement.
 
 - Errors that the app must handle are raised with a stable code as the message (`SELF_REVIEW_FORBIDDEN`, `NOT_SPACE_HOLDER`, `PROOF_REQUIRED`, …). Constraint errors use SQLSTATE: `23P01` = slot taken, `23505` = duplicate.
 - Every function: `security definer` only when needed, `set search_path = ''`, schema-qualified names.

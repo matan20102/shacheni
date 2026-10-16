@@ -1,11 +1,11 @@
 {
-    "name": "shacheni_app",
-    "short_name": "shacheni_app",
+    "name": "NAYBOR · נייבור",
+    "short_name": "NAYBOR",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Shacheni - private community app for apartment buildings",
+    "description": "NAYBOR - נייבור, הבית של הבניין שלך",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

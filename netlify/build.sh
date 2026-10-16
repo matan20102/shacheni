@@ -3,7 +3,7 @@
 # app with the Supabase settings from Netlify environment variables. Run from the repo root.
 set -euo pipefail
 
-FLUTTER_VERSION="3.47.6"
+FLUTTER_VERSION="3.47.7"
 FLUTTER_DIR="${NETLIFY_CACHE_DIR:-$HOME/.cache}/flutter-$FLUTTER_VERSION"
 
 : "${SUPABASE_URL:?Set SUPABASE_URL in Netlify → Site configuration → Environment variables}"

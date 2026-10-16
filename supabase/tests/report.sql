@@ -6,7 +6,7 @@ select count(*) filter (where ok) as passed, count(*) filter (where not ok) as f
 do $$
 begin
   if exists (select 1 from t.results where not ok) then
-    raise exception 'tests failed';
+    raise exception 'tests failed: %', (select string_agg(name || coalesce(': ' || detail, ''), '; ') from t.results where not ok);
   end if;
 end
 $$;
