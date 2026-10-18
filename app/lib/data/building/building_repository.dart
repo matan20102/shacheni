@@ -3,8 +3,33 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import 'board_read_store.dart';
+import 'platform_repository.dart';
 
 enum PostKind { notice, request }
+
+@immutable
+class ResidentMember {
+  const ResidentMember({
+    required this.id,
+    required this.name,
+    required this.apartment,
+    this.household = '',
+    this.isAdmin = false,
+    this.isApartmentAdmin = false,
+    this.mine = false,
+  });
+  final String id, name, apartment, household;
+  final bool isAdmin, isApartmentAdmin, mine;
+  ResidentMember withAdmin(bool admin) => ResidentMember(
+    id: id,
+    name: name,
+    apartment: apartment,
+    household: household,
+    isAdmin: admin,
+    isApartmentAdmin: isApartmentAdmin,
+    mine: mine,
+  );
+}
 
 @immutable
 class ResidentProfile {
@@ -44,17 +69,19 @@ class BuildingHome {
   final bool isAdmin, isCommittee;
   final bool isApartmentAdmin;
 
-  BuildingHome withHouseholdName(String value) => BuildingHome(
+  BuildingHome withHouseholdName(String value) =>
+      copyWith(householdName: value);
+  BuildingHome copyWith({String? householdName, bool? isAdmin}) => BuildingHome(
     id: id,
     name: name,
     address: address,
     code: code,
     apartment: apartment,
     entrances: entrances,
-    isAdmin: isAdmin,
+    isAdmin: isAdmin ?? this.isAdmin,
     isCommittee: isCommittee,
     isApartmentAdmin: isApartmentAdmin,
-    householdName: value,
+    householdName: householdName ?? this.householdName,
     entrance: entrance,
   );
 }
@@ -171,6 +198,10 @@ class JoinApplication {
 }
 
 abstract class BuildingRepository {
+  bool get isPlatformAdmin;
+  PlatformRepository? get platform;
+  Future<List<ResidentMember>> residents(String buildingId);
+  FutureOr<void> setAdmin(String memberId, bool admin);
   ResidentProfile get profile;
   Object? get boardError;
   FutureOr<void> updateProfile(String name, String phone);
@@ -220,6 +251,74 @@ abstract class BuildingRepository {
 /// keeps all writes in memory; it never uses or mutates the shared Supabase DB.
 class LocalBuildingRepository implements BuildingRepository {
   @override
+  bool get isPlatformAdmin => false;
+  @override
+  PlatformRepository? get platform => null;
+  final _directories = <String, List<ResidentMember>>{};
+  @override
+  Future<List<ResidentMember>> residents(String buildingId) async {
+    final home = _homes.firstWhere((h) => h.id == buildingId);
+    final rows = _directories.putIfAbsent(
+      buildingId,
+      () => [
+        ResidentMember(
+          id: 'neighbor-2-$buildingId',
+          name: 'דנה לוי',
+          apartment: '2',
+          isApartmentAdmin: true,
+        ),
+        ResidentMember(
+          id: 'self-$buildingId',
+          name: profile.name.isEmpty ? 'אני' : profile.name,
+          apartment: home.apartment,
+          mine: true,
+          isAdmin: home.isAdmin,
+          isApartmentAdmin: home.isApartmentAdmin,
+        ),
+        ResidentMember(
+          id: 'neighbor-20-$buildingId',
+          name: 'יואב כהן',
+          apartment: '20',
+          isApartmentAdmin: true,
+        ),
+      ],
+    );
+    rows.sort((a, b) {
+      final apartment = BigInt.parse(a.apartment)
+          .compareTo(BigInt.parse(b.apartment));
+      if (apartment != 0) return apartment;
+      return a.isApartmentAdmin == b.isApartmentAdmin
+          ? a.id.compareTo(b.id)
+          : a.isApartmentAdmin
+          ? -1
+          : 1;
+    });
+    return List.unmodifiable(rows);
+  }
+
+  @override
+  void setAdmin(String memberId, bool admin) {
+    final entry = _directories.entries.firstWhere(
+      (e) => e.value.any((m) => m.id == memberId),
+    );
+    final home = _homes.firstWhere((h) => h.id == entry.key);
+    if (!home.isAdmin) throw StateError('אין הרשאה');
+    final index = entry.value.indexWhere((m) => m.id == memberId);
+    final member = entry.value[index];
+    if (!admin &&
+        member.isAdmin &&
+        entry.value.where((m) => m.isAdmin).length == 1) {
+      throw StateError(
+        'מנהל הבניין האחרון צריך למנות מחליף או לארכב את הבניין לפני היציאה.',
+      );
+    }
+    entry.value[index] = member.withAdmin(admin);
+    if (member.mine) {
+      _homes[_homes.indexOf(home)] = home.copyWith(isAdmin: admin);
+    }
+  }
+
+  @override
   ResidentProfile profile = const ResidentProfile();
   @override
   Object? get boardError => null;
@@ -238,7 +337,8 @@ class LocalBuildingRepository implements BuildingRepository {
   @override
   void leave(BuildingHome home) {
     if (!_homes.contains(home)) throw StateError('אין גישה לבניין');
-    if (home.isAdmin) {
+    if (home.isAdmin &&
+        (_directories[home.id]?.where((m) => m.isAdmin).length ?? 1) == 1) {
       throw StateError(
         'מנהל הבניין האחרון צריך למנות מחליף או לארכב את הבניין לפני היציאה.',
       );

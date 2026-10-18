@@ -34,10 +34,11 @@ class AccountMenu extends StatelessWidget {
     required this.onProfile,
     required this.onBuilding,
     this.onSignOut,
+    this.onPlatform,
   });
   final ResidentProfile profile;
   final VoidCallback onProfile;
-  final VoidCallback? onBuilding, onSignOut;
+  final VoidCallback? onBuilding, onSignOut, onPlatform;
 
   @override
   Widget build(BuildContext context) => PopupMenuButton<String>(
@@ -52,6 +53,8 @@ class AccountMenu extends StatelessWidget {
           onProfile();
         case 'building':
           onBuilding?.call();
+        case 'platform':
+          onPlatform?.call();
         case 'sign-out':
           onSignOut?.call();
       }
@@ -80,6 +83,15 @@ class AccountMenu extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             leading: Icon(Icons.apartment_rounded),
             title: Text('מידע וניהול הבניין'),
+          ),
+        ),
+      if (onPlatform != null)
+        const PopupMenuItem(
+          value: 'platform',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.admin_panel_settings_outlined),
+            title: Text('ניהול המערכת'),
           ),
         ),
       if (onSignOut != null)

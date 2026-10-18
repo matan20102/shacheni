@@ -113,6 +113,8 @@ void main() {
       await tester.pumpWidget(harness(vm));
       await tester.pumpAndSettle();
       await openBuilding(tester);
+      await tester.ensureVisible(find.byKey(const Key('building-leave')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('building-leave')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('building-lifecycle-confirm')));
@@ -124,11 +126,15 @@ void main() {
       );
       await tester.tap(find.text('הבנתי'));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('building-archive')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('building-archive')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('ביטול'));
       await tester.pumpAndSettle();
       expect(repo.homes, hasLength(2));
+      await tester.ensureVisible(find.byKey(const Key('building-archive')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('building-archive')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('building-lifecycle-confirm')));
@@ -151,6 +157,8 @@ void main() {
     await tester.pumpAndSettle();
     await openBuilding(tester);
     expect(find.byKey(const Key('building-archive')), findsNothing);
+    await tester.ensureVisible(find.byKey(const Key('building-leave')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('building-leave')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('building-lifecycle-confirm')));

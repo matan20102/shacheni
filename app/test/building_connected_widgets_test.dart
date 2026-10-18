@@ -52,6 +52,26 @@ class PendingRepository extends ControlledRepository {
 }
 
 void main() {
+  for (final pending in [true, false]) {
+    testWidgets('foreground request sync is ${pending ? 5 : 20} seconds', (
+      tester,
+    ) async {
+      final repo = PollingRepository(pending);
+      final vm = BuildingViewModel(repo)..enter();
+      addTearDown(vm.dispose);
+      await tester.pumpWidget(harness(vm));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(repo.refreshes, pending ? 1 : 0);
+      if (!pending) {
+        await tester.pump(const Duration(seconds: 15));
+        await tester.pumpAndSettle();
+        expect(repo.refreshes, 1);
+      }
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
   testWidgets(
     'an approval arriving while updates are open is shown and acknowledged',
     (tester) async {
@@ -189,4 +209,33 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+}
+
+class PollingRepository extends LocalBuildingRepository {
+  PollingRepository(this.hasRequest) : super(seed: false);
+  final bool hasRequest;
+  int refreshes = 0;
+  @override
+  bool get isRemote => true;
+  @override
+  List<JoinApplication> get applications => hasRequest
+      ? const [
+          JoinApplication(
+            id: 'waiting',
+            building: BuildingHome(
+              id: 'new',
+              name: 'New',
+              address: 'New',
+              code: '',
+              apartment: '',
+            ),
+            apartment: '1',
+            apartmentHasAdmin: false,
+          ),
+        ]
+      : const [];
+  @override
+  Future<void> refresh({String? buildingId}) async {
+    refreshes++;
+  }
 }

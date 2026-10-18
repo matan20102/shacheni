@@ -166,4 +166,46 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     vm.dispose();
   });
+  testWidgets('native manager handover: promote a resident and leave', (
+    tester,
+  ) async {
+    final repo = LocalBuildingRepository();
+    final vm = BuildingViewModel(repo)..enter();
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('he'),
+        supportedLocales: const [Locale('he')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        theme: buildingTheme(),
+        home: BuildingExperience(viewModel: vm),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('account-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('מידע וניהול הבניין'));
+    await tester.pumpAndSettle();
+    final resident = find.byKey(const ValueKey('resident-neighbor-2-garden'));
+    await tester.ensureVisible(resident);
+    await tester.pumpAndSettle();
+    await tester.tap(resident);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('resident-change-role')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('resident-confirm-role')));
+    await tester.pumpAndSettle();
+    expect((await repo.residents('garden')).first.isAdmin, isTrue);
+    final leave = find.byKey(const Key('building-leave'));
+    await tester.ensureVisible(leave);
+    await tester.pumpAndSettle();
+    await tester.tap(leave);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('building-lifecycle-confirm')));
+    await tester.pumpAndSettle();
+    expect(vm.active!.id, 'olive');
+    expect(repo.homes, hasLength(1));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    vm.dispose();
+  });
 }

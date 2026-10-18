@@ -12,6 +12,8 @@ import 'glass_widgets.dart';
 import 'address_picker.dart';
 import 'board_timeline.dart';
 import 'account_widgets.dart';
+import 'resident_directory.dart';
+import 'platform_console.dart';
 
 String _apartmentLabel(BuildingHome home) => 'דירה ${home.apartment}';
 
@@ -46,6 +48,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
       widget.viewModel ?? BuildingViewModel(LocalBuildingRepository());
   final timelineKey = GlobalKey<BoardTimelineState>();
   Timer? syncTimer;
+  int syncTicks = 0;
   @override
   void initState() {
     super.initState();
@@ -55,8 +58,16 @@ class _BuildingExperienceState extends State<BuildingExperience>
 
   void _startSync() {
     syncTimer?.cancel();
+    syncTicks = 0;
     if (vm.live) {
-      syncTimer = Timer.periodic(const Duration(seconds: 20), (_) => _sync());
+      syncTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+        syncTicks++;
+        if (vm.pending.isNotEmpty ||
+            vm.inbox.isNotEmpty ||
+            syncTicks % 4 == 0) {
+          _sync();
+        }
+      });
     }
   }
 
@@ -376,6 +387,9 @@ class _BuildingExperienceState extends State<BuildingExperience>
             ),
             AccountMenu(
               profile: vm.repository.profile,
+              onPlatform: vm.repository.isPlatformAdmin
+                  ? _platformConsole
+                  : null,
               onProfile: _profile,
               onBuilding: vm.active == null ? null : _buildingInfo,
               onSignOut: widget.onSignOut == null
@@ -1026,64 +1040,22 @@ class _BuildingExperienceState extends State<BuildingExperience>
     final home = vm.active;
     if (home == null) return;
     _sheet(
-      (ctx) => ListenableBuilder(
-        listenable: vm,
-        builder: (context, _) => SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'מידע וניהול הבניין',
-                style: Theme.of(ctx).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 20),
-              GlassPanel(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(home.name, style: Theme.of(ctx).textTheme.titleLarge),
-                    if (home.address != home.name) Text(home.address),
-                    const SizedBox(height: 10),
-                    Text(
-                      '${_apartmentLabel(home)}${home.householdName.isEmpty ? '' : ' · ${home.householdName}'}',
-                    ),
-                    const SizedBox(height: 10),
-                    SoftTag(
-                      home.isAdmin ? 'מנהל בניין' : 'דייר בבניין',
-                      icon: Icons.verified_user_outlined,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                key: const Key('building-leave'),
-                onPressed: vm.busy
-                    ? null
-                    : () => _lifecycle(ctx, home, archive: false),
-                icon: const Icon(Icons.exit_to_app_rounded),
-                label: const Text('יציאה מהבניין'),
-              ),
-              if (home.isAdmin) ...[
-                const SizedBox(height: 12),
-                TextButton.icon(
-                  key: const Key('building-archive'),
-                  onPressed: vm.busy
-                      ? null
-                      : () => _lifecycle(ctx, home, archive: true),
-                  icon: const Icon(Icons.inventory_2_outlined),
-                  label: const Text('ארכוב הבניין'),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'ארכוב סוגר את הבניין לפעילות ולהצטרפות ושומר את ההיסטוריה.',
-                  style: TextStyle(color: glassMuted),
-                ),
-              ],
-            ],
-          ),
-        ),
+      (ctx) => BuildingManagementSheet(
+        vm: vm,
+        buildingId: home.id,
+        onLeave: (context, home) => _lifecycle(context, home, archive: false),
+        onArchive: (context, home) => _lifecycle(context, home, archive: true),
+      ),
+    );
+  }
+
+  void _platformConsole() {
+    final repository = vm.repository.platform;
+    if (!vm.repository.isPlatformAdmin || repository == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            PlatformConsole(repository: repository, onChanged: vm.synchronize),
       ),
     );
   }

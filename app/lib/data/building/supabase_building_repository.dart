@@ -1,10 +1,37 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'building_repository.dart';
+import 'platform_repository.dart';
 
 class SupabaseBuildingRepository implements BuildingRepository {
   SupabaseBuildingRepository(this.client);
   final SupabaseClient client;
+  @override
+  bool isPlatformAdmin = false;
+  @override
+  PlatformRepository get platform => SupabasePlatformRepository(client);
+  @override
+  Future<List<ResidentMember>> residents(String buildingId) async =>
+      List.unmodifiable([
+        for (final j in await client.rpc(
+          'ba_residents',
+          params: {'p_building': buildingId},
+        ) as List)
+          ResidentMember(
+            id: j['id'] as String,
+            name: j['name'] as String,
+            apartment: j['apartment'] as String,
+            household: j['household'] as String,
+            isAdmin: j['is_admin'] == true,
+            isApartmentAdmin: j['is_apartment_admin'] == true,
+            mine: j['mine'] == true,
+          ),
+      ]);
+  @override
+  Future<void> setAdmin(String memberId, bool admin) => client.rpc(
+    'ba_set_admin',
+    params: {'p_member': memberId, 'p_admin': admin},
+  );
   @override
   ResidentProfile profile = const ResidentProfile();
   @override
@@ -134,6 +161,7 @@ class SupabaseBuildingRepository implements BuildingRepository {
     // A slow response for the previous building must not replace a newer state.
     if (version != _refreshVersion) return;
     _homes = nextHomes;
+    isPlatformAdmin = state['is_platform_admin'] == true;
     profile = nextProfile;
     boardError = nextBoardError;
     _applications = nextApplications;
@@ -311,7 +339,8 @@ String buildingErrorMessage(Object error) {
   if (error is StateError) return error.message.toString();
   if (error is PostgrestException) {
     return switch (error.message) {
-      'ACCESS_DENIED' => 'אין הרשאה לפעולה הזאת. נסה לרענן את הבניין.',
+      'ACCESS_DENIED' =>
+        'אין הרשאה לפעולה הזאת. יש לבדוק שהחשבון וההרשאות מעודכנים.',
       'ALREADY_APPLIED' => 'כבר קיימת חברות או בקשה לבניין הזה.',
       'LEGAL_NOT_ACCEPTED' => 'יש לאשר את תנאי השימוש לפני ההמשך.',
       'RATE_LIMITED' => 'בוצעו יותר מדי ניסיונות. אפשר לנסות שוב מאוחר יותר.',
@@ -321,6 +350,7 @@ String buildingErrorMessage(Object error) {
       'PHONE_INVALID' =>
         'יש להזין מספר נייד ישראלי תקין, או להשאיר את השדה ריק.',
       'PHONE_TAKEN' => 'מספר הטלפון כבר משויך לחשבון אחר.',
+      'BUILDING_NEEDS_ADMIN' => 'נדרש מנהל בניין מאושר לפני שחזור הבניין.',
       'INVALID_ARGUMENT' => 'יש לבדוק את הפרטים שהזנת.',
       'INVALID_STATE' => 'הבקשה כבר השתנתה. נסה לרענן.',
       _ =>

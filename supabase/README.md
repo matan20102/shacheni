@@ -51,7 +51,8 @@ and manager status. A proposed name is staged on a new-home request and committe
 only when its first manager is approved. Existing names cannot be replaced by a
 join request, including two requests competing to open the same home.
 
-All 380 SQL checks pass locally. The account/lifecycle suite also passes 46 checks
+All 438 SQL checks pass locally. The resident/platform-console suite also passes 58 checks
+against the hosted project inside a rolled-back transaction. The account/lifecycle suite passes 46 checks
 against the hosted project inside a rolled-back transaction. The explicit, idempotent development fixture in
 `fixtures/check_building.sql` creates the marked CHECK building and three
 credential-free test identities. It is never applied automatically with schema
