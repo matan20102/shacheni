@@ -13,7 +13,7 @@ class SupabaseBuildingRepository implements BuildingRepository {
   @override
   bool isPlatformAdmin = false;
   @override
-  PlatformRepository get platform => SupabasePlatformRepository(client);
+  late final PlatformRepository platform = SupabasePlatformRepository(client);
   @override
   Future<List<ResidentMember>> residents(String buildingId) async =>
       List.unmodifiable([
@@ -106,7 +106,11 @@ class SupabaseBuildingRepository implements BuildingRepository {
     closed: j['closed'] == true,
     replies: List.unmodifiable([
       for (final r in j['replies'] as List)
-        BoardReply(r['author'] as String, r['text'] as String),
+        BoardReply(
+          r['author'] as String,
+          r['text'] as String,
+          mine: r['mine'] == true,
+        ),
     ]),
     reactions: Map.unmodifiable({
       for (final e in (j['reactions'] as Map<String, dynamic>).entries)

@@ -237,7 +237,11 @@ class _GoogleWelcomeState extends State<_GoogleWelcome> {
                 if (error != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 16),
-                    child: Text(error!, textAlign: TextAlign.center),
+                    child: Text(
+                      error!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: glassError),
+                    ),
                   ),
                 const SizedBox(height: 16),
                 const Text(

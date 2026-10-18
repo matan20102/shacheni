@@ -63,9 +63,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
     if (vm.live) {
       syncTimer = Timer.periodic(const Duration(seconds: 5), (_) {
         syncTicks++;
-        if (vm.pending.isNotEmpty ||
-            vm.inbox.isNotEmpty ||
-            syncTicks % 4 == 0) {
+        if (vm.needsFastSync || syncTicks % 4 == 0) {
           _sync();
         }
       });
@@ -386,7 +384,11 @@ class _BuildingExperienceState extends State<BuildingExperience>
                 icon: Badge(
                   key: const Key('building-updates-badge'),
                   isLabelVisible: vm.notificationCount > 0,
-                  label: Text('${vm.notificationCount}'),
+                  label: Text(
+                    vm.notificationCount > 99
+                        ? '99+'
+                        : '${vm.notificationCount}',
+                  ),
                   child: const Icon(
                     Icons.notifications_none_rounded,
                     color: glassInk,
@@ -410,265 +412,274 @@ class _BuildingExperienceState extends State<BuildingExperience>
     ),
   );
 
-  Widget _home() => ListView(
-    padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
-    children: [
-      const Eyebrow('טוב להיות בבית'),
-      const SizedBox(height: 6),
-      Text(
-        'שלום, ${vm.repository.profile.firstName.isEmpty ? 'שכן' : vm.repository.profile.firstName} 👋',
-        style: Theme.of(context).textTheme.headlineLarge,
-      ),
-      const SizedBox(height: 6),
-      const Text(
-        'הדברים הקטנים שמחברים את הבניין.',
-        style: TextStyle(color: glassMuted, fontSize: 15),
-      ),
-      const SizedBox(height: 24),
-      GlassPanel(
-        tint: const Color(0xFFBEE7E3),
-        opacity: .55,
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Eyebrow('הבית שלי'),
-                  const SizedBox(height: 8),
-                  Text(
-                    vm.active == null
-                        ? 'מתחילים עם הבניין שלך'
-                        : vm.active!.householdName.isNotEmpty
-                        ? vm.active!.householdName
-                        : _apartmentLabel(vm.active!),
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    vm.active == null
-                        ? 'אפשר ליצור בניין או להצטרף עם קוד.'
-                        : vm.active!.householdName.isEmpty
-                        ? vm.active!.name
-                        : '${vm.active!.name} · ${_apartmentLabel(vm.active!)}',
-                    style: const TextStyle(color: glassMuted),
-                  ),
-                  const SizedBox(height: 12),
-                  SoftTag(
-                    vm.live ? 'הבית שלך' : 'נתוני הדגמה',
-                    icon: vm.live
-                        ? Icons.check_circle_outline
-                        : Icons.science_outlined,
-                  ),
-                  if (vm.active?.isApartmentAdmin ?? false)
-                    TextButton.icon(
-                      key: const Key('household-edit'),
-                      onPressed: _editHousehold,
-                      icon: const Icon(Icons.edit_outlined, size: 15),
-                      label: Text(
-                        vm.active!.householdName.isEmpty
-                            ? 'לתת שם לבית'
-                            : 'עריכת שם הבית',
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const BuildingMark(size: 78),
-          ],
+  Widget _home() {
+    final posts = vm.posts;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+      children: [
+        const Eyebrow('טוב להיות בבית'),
+        const SizedBox(height: 6),
+        Text(
+          'שלום, ${vm.repository.profile.firstName.isEmpty ? 'שכן' : vm.repository.profile.firstName} 👋',
+          style: Theme.of(context).textTheme.headlineLarge,
         ),
-      ),
-      const SectionTitle('מה עושים היום?'),
-      LayoutBuilder(
-        builder: (context, c) => Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            SizedBox(
-              width: (c.maxWidth - 12) / 2,
-              child: _ActionCard(
-                Icons.edit_note_rounded,
-                vm.active == null ? 'יצירת בניין' : 'לפרסם בלוח',
-                vm.active == null ? 'מתחילים בית חדש' : 'עדכון או בקשת עזרה',
-                () {
-                  if (vm.active == null) {
-                    _create();
-                    return;
-                  }
-                  vm.navigate(1);
-                  _compose();
-                },
-              ),
-            ),
-            SizedBox(
-              width: (c.maxWidth - 12) / 2,
-              child: _ActionCard(
-                vm.active == null
-                    ? Icons.add_home_outlined
-                    : Icons.forum_outlined,
-                vm.active == null ? 'הצטרפות לבניין' : 'לוח הבניין',
-                vm.active == null ? 'עם הקוד שקיבלת' : 'מה חדש אצל השכנים',
-                vm.active == null ? _join : () => _navigate(1),
-              ),
-            ),
-          ],
+        const SizedBox(height: 6),
+        const Text(
+          'הדברים הקטנים שמחברים את הבניין.',
+          style: TextStyle(color: glassMuted, fontSize: 15),
         ),
-      ),
-      SectionTitle(
-        'מה חדש בבניין',
-        action: TextButton(
-          onPressed: () => vm.navigate(1),
-          child: const Text('לכל הפרסומים'),
-        ),
-      ),
-      if (vm.posts.isEmpty)
-        _empty(
-          'הלוח שלכם מתחיל כאן',
-          'עדכון ראשון הוא דרך טובה להגיד שלום.',
-          _compose,
-        )
-      else
-        for (final post in vm.posts.take(2))
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: InkWell(
-              onTap: () => _conversation(post.id),
-              borderRadius: BorderRadius.circular(26),
-              child: GlassPanel(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
+        const SizedBox(height: 24),
+        GlassPanel(
+          tint: const Color(0xFFBEE7E3),
+          opacity: .55,
+          child: Row(
+            children: [
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            post.author,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        if (post.pinned)
-                          const SoftTag('נעוץ', icon: Icons.push_pin_outlined),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
+                    const Eyebrow('הבית שלי'),
+                    const SizedBox(height: 8),
                     Text(
-                      post.text,
+                      vm.active == null
+                          ? 'מתחילים עם הבניין שלך'
+                          : vm.active!.householdName.isNotEmpty
+                          ? vm.active!.householdName
+                          : _apartmentLabel(vm.active!),
+                      style: Theme.of(context).textTheme.headlineMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 14, height: 1.4),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
                     Text(
-                      '${post.replies.length} תגובות · לפתיחת השיחה',
-                      style: const TextStyle(color: glassTeal, fontSize: 12),
+                      vm.active == null
+                          ? 'אפשר ליצור בניין או להצטרף עם קוד.'
+                          : vm.active!.householdName.isEmpty
+                          ? vm.active!.name
+                          : '${vm.active!.name} · ${_apartmentLabel(vm.active!)}',
+                      style: const TextStyle(color: glassMuted),
                     ),
+                    const SizedBox(height: 12),
+                    SoftTag(
+                      vm.live ? 'הבית שלך' : 'נתוני הדגמה',
+                      icon: vm.live
+                          ? Icons.check_circle_outline
+                          : Icons.science_outlined,
+                    ),
+                    if (vm.active?.isApartmentAdmin ?? false)
+                      TextButton.icon(
+                        key: const Key('household-edit'),
+                        onPressed: _editHousehold,
+                        icon: const Icon(Icons.edit_outlined, size: 15),
+                        label: Text(
+                          vm.active!.householdName.isEmpty
+                              ? 'לתת שם לבית'
+                              : 'עריכת שם הבית',
+                        ),
+                      ),
                   ],
                 ),
               ),
-            ),
+              const BuildingMark(size: 78),
+            ],
           ),
-      const SectionTitle('נעים להכיר'),
-      const GlassPanel(
-        child: _FeatureLine(
-          Icons.waving_hand_outlined,
-          'השכנים, קרוב מתמיד',
-          'פניות פרטיות לדירה יתווספו בהמשך.\nהתוכן שלהן יהיה גלוי רק למשתתפים.',
         ),
-      ),
-    ],
-  );
-
-  Widget _board() => Column(
-    children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Eyebrow('השיחה של הבניין'),
-                  const SizedBox(height: 4),
-                  Text(
-                    'לוח הבניין',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                ],
-              ),
-            ),
-            IconButton.filled(
-              key: const Key('board-new-post'),
-              onPressed: vm.active == null ? null : _compose,
-              tooltip: 'פרסום חדש',
-              icon: const Icon(Icons.add_rounded),
-            ),
-          ],
-        ),
-      ),
-      if (vm.posts.any((p) => p.pinned)) _pinnedBanner(),
-      Expanded(
-        child: vm.posts.isEmpty
-            ? ListView(
-                padding: const EdgeInsets.all(24),
-                children: [
-                  _empty(
-                    'עוד אין כאן פרסומים',
-                    'יש משהו לשתף עם השכנים?',
-                    vm.active == null ? _chooseBuilding : _compose,
-                  ),
-                ],
-              )
-            : BoardTimeline(
-                key: timelineKey,
-                buildingId: vm.active!.id,
-                posts: vm.posts.reversed.toList(),
-                readStore: vm.readStore,
-                itemBuilder: _postCard,
-              ),
-      ),
-    ],
-  );
-
-  Widget _pinnedBanner() {
-    final pinned = vm.posts.where((p) => p.pinned).toList();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
-      child: InkWell(
-        onTap: () => _conversation(pinned.first.id),
-        borderRadius: BorderRadius.circular(12),
-        child: GlassPanel(
-          radius: 12,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          child: Row(
+        const SectionTitle('מה עושים היום?'),
+        LayoutBuilder(
+          builder: (context, c) => Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              const Icon(Icons.push_pin_outlined, size: 15, color: glassTeal),
-              const SizedBox(width: 6),
-              Text(
-                pinned.length == 1 ? 'נעוץ' : '${pinned.length} נעוצים',
-                style: const TextStyle(fontSize: 11, color: glassTeal),
+              SizedBox(
+                width: (c.maxWidth - 12) / 2,
+                child: _ActionCard(
+                  Icons.edit_note_rounded,
+                  vm.active == null ? 'יצירת בניין' : 'לפרסם בלוח',
+                  vm.active == null ? 'מתחילים בית חדש' : 'עדכון או בקשת עזרה',
+                  () {
+                    if (vm.active == null) {
+                      _create();
+                      return;
+                    }
+                    _navigate(1);
+                    _compose();
+                  },
+                ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  pinned.first.text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12),
+              SizedBox(
+                width: (c.maxWidth - 12) / 2,
+                child: _ActionCard(
+                  vm.active == null
+                      ? Icons.add_home_outlined
+                      : Icons.forum_outlined,
+                  vm.active == null ? 'הצטרפות לבניין' : 'לוח הבניין',
+                  vm.active == null ? 'עם הקוד שקיבלת' : 'מה חדש אצל השכנים',
+                  vm.active == null ? _join : () => _navigate(1),
                 ),
               ),
             ],
           ),
         ),
-      ),
+        SectionTitle(
+          'מה חדש בבניין',
+          action: TextButton(
+            onPressed: () => _navigate(1),
+            child: const Text('לכל הפרסומים'),
+          ),
+        ),
+        if (posts.isEmpty)
+          _empty(
+            'הלוח שלכם מתחיל כאן',
+            'עדכון ראשון הוא דרך טובה להגיד שלום.',
+            _compose,
+          )
+        else
+          for (final post in posts.take(2))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: InkWell(
+                onTap: () => _conversation(post.id),
+                borderRadius: BorderRadius.circular(26),
+                child: GlassPanel(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              post.author,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          if (post.pinned)
+                            const SoftTag(
+                              'נעוץ',
+                              icon: Icons.push_pin_outlined,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        post.text,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 14, height: 1.4),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        '${_replyCount(post.replies.length)} · לפתיחת השיחה',
+                        style: const TextStyle(color: glassTeal, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        const SectionTitle('נעים להכיר'),
+        const GlassPanel(
+          child: _FeatureLine(
+            Icons.waving_hand_outlined,
+            'השכנים, קרוב מתמיד',
+            'פניות פרטיות לדירה יתווספו בהמשך.\nהתוכן שלהן יהיה גלוי רק למשתתפים.',
+          ),
+        ),
+      ],
     );
   }
+
+  Widget _board() {
+    final posts = vm.posts;
+    final pinned = posts.where((p) => p.pinned).toList();
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Eyebrow('השיחה של הבניין'),
+                    const SizedBox(height: 4),
+                    Text(
+                      'לוח הבניין',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton.filled(
+                key: const Key('board-new-post'),
+                onPressed: vm.active == null ? null : _compose,
+                tooltip: 'פרסום חדש',
+                icon: const Icon(Icons.add_rounded),
+              ),
+            ],
+          ),
+        ),
+        if (pinned.isNotEmpty) _pinnedBanner(pinned),
+        Expanded(
+          child: posts.isEmpty
+              ? ListView(
+                  padding: const EdgeInsets.all(24),
+                  children: [
+                    _empty(
+                      'עוד אין כאן פרסומים',
+                      'יש משהו לשתף עם השכנים?',
+                      vm.active == null ? _chooseBuilding : _compose,
+                    ),
+                  ],
+                )
+              : BoardTimeline(
+                  key: timelineKey,
+                  buildingId: vm.active!.id,
+                  posts: posts.reversed.toList(),
+                  readStore: vm.readStore,
+                  itemBuilder: _postCard,
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _pinnedBanner(List<BoardPost> pinned) => Padding(
+    padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+    child: InkWell(
+      onTap: () => _conversation(pinned.first.id),
+      borderRadius: BorderRadius.circular(12),
+      child: GlassPanel(
+        radius: 12,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Row(
+          children: [
+            const Icon(Icons.push_pin_outlined, size: 15, color: glassTeal),
+            const SizedBox(width: 6),
+            Text(
+              pinned.length == 1 ? 'נעוץ' : '${pinned.length} נעוצים',
+              style: const TextStyle(fontSize: 11, color: glassTeal),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                pinned.first.text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   Widget _postCard(BoardPost post) => Align(
     key: Key('board-post-${post.id}'),
@@ -694,7 +705,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
                         : const Color(0xFFE0E8F0),
                     foregroundColor: post.mine ? Colors.white : glassInk,
                     child: Text(
-                      post.author.characters.first,
+                      post.author.isEmpty ? 'ש' : post.author.characters.first,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
@@ -813,7 +824,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
                       size: 14,
                     ),
                     label: Text(
-                      '${post.replies.length} תגובות',
+                      _replyCount(post.replies.length),
                       style: const TextStyle(fontSize: 11),
                     ),
                   ),
@@ -1487,10 +1498,23 @@ const _navItems = [
 String _relative(DateTime time) {
   final elapsed = DateTime.now().difference(time);
   if (elapsed.inMinutes < 1) return 'עכשיו';
-  if (elapsed.inMinutes < 60) return 'לפני ${elapsed.inMinutes} דקות';
-  if (elapsed.inHours < 24) return 'לפני ${elapsed.inHours} שעות';
-  return 'לפני ${elapsed.inDays} ימים';
+  if (elapsed.inMinutes < 60) {
+    return _ago(elapsed.inMinutes, 'דקה', 'שתי דקות', 'דקות');
+  }
+  if (elapsed.inHours < 24) {
+    return _ago(elapsed.inHours, 'שעה', 'שעתיים', 'שעות');
+  }
+  if (elapsed.inDays < 7) return _ago(elapsed.inDays, 'יום', 'יומיים', 'ימים');
+  return '\u2066${time.day}.${time.month}.${time.year % 100}\u2069';
 }
+
+String _ago(int n, String one, String two, String many) => switch (n) {
+  1 => 'לפני $one',
+  2 => 'לפני $two',
+  _ => 'לפני $n $many',
+};
+
+String _replyCount(int count) => count == 1 ? 'תגובה אחת' : '$count תגובות';
 
 class _FeatureLine extends StatelessWidget {
   const _FeatureLine(this.icon, this.title, this.description);
@@ -1601,7 +1625,7 @@ class _HouseholdFormState extends State<_HouseholdForm>
           decoration: const InputDecoration(labelText: 'שם הבית'),
         ),
         if (submitError != null)
-          Text(submitError!, style: const TextStyle(color: Colors.red)),
+          Text(submitError!, style: const TextStyle(color: glassError)),
         const SizedBox(height: 12),
         FilledButton(
           onPressed: submitting
@@ -1680,7 +1704,7 @@ class _BuildingFormState extends State<_BuildingForm>
           ),
           const SizedBox(height: 22),
           if (submitError != null)
-            Text(submitError!, style: const TextStyle(color: Colors.red)),
+            Text(submitError!, style: const TextStyle(color: glassError)),
           const GlassPanel(
             child: _FeatureLine(
               Icons.verified_user_outlined,
@@ -1814,6 +1838,24 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
     });
   }
 
+  void _checkCode() {
+    if (submitting) return;
+    if (code.text.trim().isEmpty) {
+      setState(() => error = 'יש להזין את קוד הבניין');
+      return;
+    }
+    submit(() async {
+      final result = await widget.repository.resolveCode(code.text);
+      if (!mounted) return;
+      setState(() {
+        _resetApartment();
+        found = result;
+        error = found == null ? 'לא נמצא בניין עם הקוד הזה' : null;
+      });
+      _queueApartmentCheck();
+    });
+  }
+
   @override
   void dispose() {
     debounce?.cancel();
@@ -1850,6 +1892,8 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
             enabled: !submitting,
             textDirection: TextDirection.ltr,
             textCapitalization: TextCapitalization.characters,
+            textInputAction: TextInputAction.search,
+            onSubmitted: (_) => _checkCode(),
             decoration: InputDecoration(
               labelText: 'קוד בניין',
               errorText: error,
@@ -1868,26 +1912,11 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
             ),
           const SizedBox(height: 12),
           OutlinedButton(
-            onPressed: submitting
-                ? null
-                : () => submit(() async {
-                    final result = await widget.repository.resolveCode(
-                      code.text,
-                    );
-                    if (!mounted) return;
-                    setState(() {
-                      _resetApartment();
-                      found = result;
-                      error = found == null
-                          ? 'לא נמצא בניין עם הקוד הזה'
-                          : null;
-                    });
-                    _queueApartmentCheck();
-                  }),
+            onPressed: submitting ? null : _checkCode,
             child: const Text('בדיקת הקוד'),
           ),
           if (submitError != null)
-            Text(submitError!, style: const TextStyle(color: Colors.red)),
+            Text(submitError!, style: const TextStyle(color: glassError)),
           if (found != null) ...[
             const SizedBox(height: 18),
             GlassPanel(
@@ -1910,7 +1939,7 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
                 style: TextStyle(color: glassMuted),
               ),
             if (lookupError != null) ...[
-              Text(lookupError!, style: const TextStyle(color: Colors.red)),
+              Text(lookupError!, style: const TextStyle(color: glassError)),
               TextButton(
                 onPressed: _queueApartmentCheck,
                 child: const Text('בדיקת הדירה מחדש'),
@@ -2041,7 +2070,7 @@ class _PostFormState extends State<_PostForm> with _AsyncForm<_PostForm> {
           ),
           const SizedBox(height: 20),
           if (submitError != null)
-            Text(submitError!, style: const TextStyle(color: Colors.red)),
+            Text(submitError!, style: const TextStyle(color: glassError)),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -2152,14 +2181,14 @@ class _ConversationState extends State<_Conversation>
                             padding: const EdgeInsets.only(bottom: 10),
                             child: GlassPanel(
                               padding: const EdgeInsets.all(16),
-                              tint: r.author == 'אני'
+                              tint: r.mine
                                   ? const Color(0xFFD8F0ED)
                                   : Colors.white,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    r.author,
+                                    r.mine ? 'אני' : r.author,
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: glassTeal,
@@ -2181,7 +2210,7 @@ class _ConversationState extends State<_Conversation>
                       submitError!,
                       maxLines: compact ? 1 : null,
                       overflow: compact ? TextOverflow.ellipsis : null,
-                      style: const TextStyle(color: Colors.red),
+                      style: const TextStyle(color: glassError),
                     ),
                   if (post.closed)
                     const Text(

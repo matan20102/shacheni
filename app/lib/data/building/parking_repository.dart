@@ -141,7 +141,8 @@ String parkingError(Object error) {
       ? error.message
       : error.toString();
   for (final entry in const {
-    'PARKING_LABEL_TAKEN': 'סימון החניה כבר רשום בבניין. כדאי לבדוק שהסימון נכון.',
+    'PARKING_LABEL_TAKEN':
+        'סימון החניה כבר רשום בבניין. כדאי לבדוק שהסימון נכון.',
     'PARKING_OVERLAP': 'כבר פורסמה זמינות לחניה הזאת בשעות שנבחרו.',
     'INVALID_TIME_RANGE': 'יש לבחור טווח עתידי תקין של עד 90 יום.',
     'PARKING_UNAVAILABLE':

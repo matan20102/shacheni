@@ -91,8 +91,9 @@ class BuildingHome {
 
 @immutable
 class BoardReply {
-  const BoardReply(this.author, this.text);
+  const BoardReply(this.author, this.text, {this.mine = false});
   final String author, text;
+  final bool mine;
 }
 
 @immutable
@@ -181,6 +182,10 @@ class JoinApplication {
   bool get approved =>
       buildingApproved && (!apartmentHasAdmin || apartmentApproved);
   bool get becomesApartmentAdmin => approved && !apartmentHasAdmin;
+  bool get needsMyApproval =>
+      !approved &&
+      ((!buildingApproved && canApproveBuilding) ||
+          (apartmentHasAdmin && !apartmentApproved && canApproveApartment));
 
   JoinApplication copyWith({bool? buildingApproved, bool? apartmentApproved}) =>
       JoinApplication(
@@ -656,7 +661,7 @@ class LocalBuildingRepository implements BuildingRepository {
       return p.copyWith(
         replies: List.unmodifiable([
           ...p.replies,
-          BoardReply('אני', text.trim()),
+          BoardReply('אני', text.trim(), mine: true),
         ]),
       );
     });
@@ -727,15 +732,10 @@ class BuildingViewModel extends ChangeNotifier {
   List<ApprovalUpdate> get approvalUpdates => repository.approvalUpdates;
   int get notificationCount =>
       approvalUpdates.length +
-      inbox
-          .where(
-            (a) =>
-                (!a.buildingApproved && a.canApproveBuilding) ||
-                (a.apartmentHasAdmin &&
-                    !a.apartmentApproved &&
-                    a.canApproveApartment),
-          )
-          .length;
+      repository.applications.where((a) => !a.mine && a.needsMyApproval).length;
+  bool get needsFastSync => repository.applications.any(
+    (a) => !a.approved && (a.mine || a.needsMyApproval),
+  );
   BuildingHome? get active => homes.where((b) => b.id == _activeId).firstOrNull;
   List<BoardPost> get posts {
     final result = active == null

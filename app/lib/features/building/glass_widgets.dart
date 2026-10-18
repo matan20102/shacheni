@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 const glassInk = Color(0xFF203B49);
 const glassTeal = Color(0xFF087F8C);
 const glassMuted = Color(0xFF657B88);
+const glassError = Color(0xFFB53A40);
 
 ThemeData buildingTheme() => ThemeData(
   useMaterial3: true,
   fontFamily: 'Heebo',
   colorScheme: ColorScheme.fromSeed(seedColor: glassTeal).copyWith(
     primary: glassTeal,
+    error: glassError,
     surface: const Color(0xFFF8FCFD),
     onSurface: glassInk,
   ),
@@ -77,6 +79,9 @@ ThemeData buildingTheme() => ThemeData(
 );
 
 /// Frosted layers remain bounded to navigation/cards; text sits on a legible tint.
+/// Non-overlapping panels on one [GlassBackground] share backdrop input so the
+/// engine can combine their blur operations. Overlapping panels must pass
+/// [shareBackdrop] false to preserve the backdrop beneath each layer.
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
     super.key,
@@ -85,11 +90,13 @@ class GlassPanel extends StatelessWidget {
     this.tint = Colors.white,
     this.opacity = .7,
     this.radius = 26,
+    this.shareBackdrop = true,
   });
   final Widget child;
   final EdgeInsetsGeometry padding;
   final Color tint;
   final double opacity, radius;
+  final bool shareBackdrop;
   @override
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
@@ -104,9 +111,8 @@ class GlassPanel extends StatelessWidget {
     ),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: DecoratedBox(
+      child: _blur(
+        DecoratedBox(
           decoration: BoxDecoration(
             color: tint.withValues(alpha: opacity),
             borderRadius: BorderRadius.circular(radius),
@@ -123,11 +129,36 @@ class GlassPanel extends StatelessWidget {
       ),
     ),
   );
+
+  static final _filter = ImageFilter.blur(sigmaX: 18, sigmaY: 18);
+  Widget _blur(Widget child) => shareBackdrop
+      ? BackdropFilter.grouped(filter: _filter, child: child)
+      : BackdropFilter(filter: _filter, child: child);
 }
 
-class GlassBackground extends StatelessWidget {
+class GlassBackground extends StatefulWidget {
   const GlassBackground({super.key, required this.child});
   final Widget child;
+  @override
+  State<GlassBackground> createState() => _GlassBackgroundState();
+}
+
+class _GlassBackgroundState extends State<GlassBackground> {
+  // Keep the shared backdrop input identity stable across screen rebuilds.
+  final backdropKey = BackdropKey();
+  @override
+  Widget build(BuildContext context) => Stack(
+    children: [
+      const Positioned.fill(child: RepaintBoundary(child: _Backdrop())),
+      Positioned.fill(
+        child: BackdropGroup(backdropKey: backdropKey, child: widget.child),
+      ),
+    ],
+  );
+}
+
+class _Backdrop extends StatelessWidget {
+  const _Backdrop();
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: const BoxDecoration(
@@ -154,7 +185,6 @@ class GlassBackground extends StatelessWidget {
           right: -80,
           child: _orb(const Color(0x44EBC7A7), 300),
         ),
-        Positioned.fill(child: child),
       ],
     ),
   );
@@ -187,6 +217,7 @@ class BuildingMark extends StatelessWidget {
             padding: EdgeInsets.all(size * .18),
             tint: const Color(0xFFB7E5E0),
             opacity: .55,
+            shareBackdrop: false,
             child: Icon(
               Icons.apartment_rounded,
               size: size * .68,

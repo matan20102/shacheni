@@ -264,12 +264,14 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
                         title: Text(
                           '${member.name}${member.mine ? ' (אני)' : ''}',
                         ),
-                        subtitle: Text(
-                          [
-                            if (member.isApartmentAdmin) 'מנהל הדירה',
-                            if (member.isAdmin) 'מנהל בניין',
-                          ].join(' · '),
-                        ),
+                        subtitle: member.isApartmentAdmin || member.isAdmin
+                            ? Text(
+                                [
+                                  if (member.isApartmentAdmin) 'מנהל הדירה',
+                                  if (member.isAdmin) 'מנהל בניין',
+                                ].join(' · '),
+                              )
+                            : null,
                         trailing: const Icon(
                           Icons.chevron_left_rounded,
                           size: 18,

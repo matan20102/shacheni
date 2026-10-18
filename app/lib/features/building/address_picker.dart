@@ -148,24 +148,22 @@ class _AddressPickerState extends State<AddressPicker> {
           ),
         ),
       ),
-      ...[
-        const SizedBox(height: 12),
-        TextFormField(
-          key: const Key('building-house-number'),
-          controller: number,
-          focusNode: numberFocus,
-          maxLength: 40,
-          textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(
-            labelText: 'מספר בית / זיהוי הבניין',
-            hintText: 'למשל: 216 או 216 כניסה א׳',
-            helperText: 'טקסט חופשי — אפשר לציין גם כניסה לבניין.',
-            counterText: '',
-          ),
-          validator: (text) =>
-              text == null || text.trim().isEmpty ? 'יש להזין מספר בית' : null,
+      const SizedBox(height: 12),
+      TextFormField(
+        key: const Key('building-house-number'),
+        controller: number,
+        focusNode: numberFocus,
+        maxLength: 40,
+        textInputAction: TextInputAction.next,
+        decoration: const InputDecoration(
+          labelText: 'מספר בית / זיהוי הבניין',
+          hintText: 'למשל: 216 או 216 כניסה א׳',
+          helperText: 'טקסט חופשי — אפשר לציין גם כניסה לבניין.',
+          counterText: '',
         ),
-      ],
+        validator: (text) =>
+            text == null || text.trim().isEmpty ? 'יש להזין מספר בית' : null,
+      ),
       const SizedBox(height: 6),
       Text(
         selected == null

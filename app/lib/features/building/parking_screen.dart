@@ -165,7 +165,7 @@ class _ParkingScreenState extends State<ParkingScreen>
             const SizedBox(height: 4),
             Text(
               'החניון שלנו',
-              style: Theme.of(context).textTheme.headlineLarge,
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 8),
             const Text(
@@ -461,6 +461,15 @@ class _ParkingEditorState extends State<ParkingEditor> {
         time.minute,
       );
       if (from) {
+        // Moving the start past the end keeps the chosen length instead of
+        // leaving an invalid range for the user to discover on save.
+        if (!end.isAfter(picked)) {
+          end = picked.add(
+            end.isAfter(start)
+                ? end.difference(start)
+                : const Duration(hours: 2),
+          );
+        }
         start = picked;
       } else {
         end = picked;
@@ -590,10 +599,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
             if (error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
-                child: Text(
-                  error!,
-                  style: const TextStyle(color: Color(0xFFAB3D3D)),
-                ),
+                child: Text(error!, style: const TextStyle(color: glassError)),
               ),
             const SizedBox(height: 24),
             FilledButton(

@@ -29,27 +29,6 @@ class AddressCatalog {
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
 
-  Iterable<String> cities(String query) => _matches(streets.keys, query);
-  Iterable<String> forCity(String city, String query) =>
-      _matches(streets[city] ?? const [], query);
-  Iterable<String> _matches(Iterable<String> values, String query) {
-    final needle = _normalize(query);
-    if (needle.isEmpty) return const [];
-    final matches = values
-        .where((v) => _normalize(v).contains(needle))
-        .toList();
-    matches.sort((a, b) {
-      final aStarts = _normalize(a).startsWith(needle),
-          bStarts = _normalize(b).startsWith(needle);
-      return aStarts == bStarts
-          ? a.compareTo(b)
-          : aStarts
-          ? -1
-          : 1;
-    });
-    return matches.take(12);
-  }
-
   Iterable<AddressChoice> search(String query) {
     final text = _normalize(query);
     if (text.length < 2) return const [];

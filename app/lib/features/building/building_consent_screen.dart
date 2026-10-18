@@ -134,7 +134,7 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                         child: Text(
                           error!,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Color(0xFFB53A40)),
+                          style: const TextStyle(color: glassError),
                         ),
                       ),
                     ),
