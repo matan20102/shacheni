@@ -14,6 +14,7 @@ import 'board_timeline.dart';
 import 'account_widgets.dart';
 import 'resident_directory.dart';
 import 'platform_console.dart';
+import 'parking_screen.dart';
 
 String _apartmentLabel(BuildingHome home) => 'דירה ${home.apartment}';
 
@@ -207,12 +208,20 @@ class _BuildingExperienceState extends State<BuildingExperience>
                 child: switch (vm.tab) {
                   0 => _home(),
                   1 => _board(),
-                  2 => _later(
-                    'חניה',
-                    'מקום קטן. עזרה גדולה.',
-                    Icons.local_parking_rounded,
-                    'כאן נוכל לשתף חניה פנויה ולהזמין אותה לכל הטווח.\nמסלול החניה יתווסף בשלב הבא.',
-                  ),
+                  2 =>
+                    vm.active == null
+                        ? _later(
+                            'חניה',
+                            'מקום קטן. עזרה גדולה.',
+                            Icons.local_parking_rounded,
+                            'מצטרפים לבניין כדי לשתף ולהזמין חניות עם השכנים.',
+                          )
+                        : ParkingScreen(
+                            key: ValueKey('parking-${vm.active!.id}'),
+                            repository: vm.repository.parking,
+                            buildingId: vm.active!.id,
+                            apartment: vm.active!.apartment,
+                          ),
                   _ => _later(
                     'ועד בית',
                     'הבית שלנו, בניהול משותף.',

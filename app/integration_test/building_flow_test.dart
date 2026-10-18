@@ -6,6 +6,8 @@ import 'package:shacheni_app/data/building/building_repository.dart';
 import 'package:shacheni_app/data/building/board_read_store.dart';
 import 'package:shacheni_app/features/building/building_app.dart';
 import 'package:shacheni_app/features/building/glass_widgets.dart';
+import 'package:shacheni_app/features/building/parking_screen.dart';
+import 'package:shacheni_app/data/building/local_parking_repository.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -208,4 +210,61 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     vm.dispose();
   });
+  testWidgets(
+    'native parking: confirm a whole window and cancel the reservation',
+    (tester) async {
+      final store = ParkingMemoryStore();
+      final owner = LocalParkingRepository(
+        apartmentFor: (_) => '12',
+        userId: 'owner',
+        store: store,
+      );
+      final guest = LocalParkingRepository(
+        apartmentFor: (_) => '2',
+        userId: 'guest',
+        store: store,
+      );
+      await owner.addSpace('native', '42', '-1', 'ליד המעלית');
+      final space = (await owner.load('native')).spaces.single;
+      final start = DateTime.now().add(const Duration(hours: 1));
+      await owner.publish(space.id, start, start.add(const Duration(hours: 2)));
+      final offer = (await guest.load('native')).offers.single;
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('he'),
+          supportedLocales: const [Locale('he')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          theme: buildingTheme(),
+          home: Scaffold(
+            body: SafeArea(
+              child: ParkingScreen(
+                repository: guest,
+                buildingId: 'native',
+                apartment: '2',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final book = find.byKey(ValueKey('parking-book-${offer.id}'));
+      await tester.ensureVisible(book);
+      await tester.pumpAndSettle();
+      await tester.tap(book);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('parking-confirm')));
+      await tester.pumpAndSettle();
+      expect(find.text('מוזמנת עבורך'), findsOneWidget);
+      final cancel = find.byKey(ValueKey('parking-cancel-${offer.id}'));
+      await tester.ensureVisible(cancel);
+      await tester.pumpAndSettle();
+      await tester.tap(cancel);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('parking-confirm')));
+      await tester.pumpAndSettle();
+      expect((await guest.load('native')).offers.single.canBook, isTrue);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 }

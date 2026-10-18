@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'parking_repository.dart';
+import 'local_parking_repository.dart';
+
 import 'board_read_store.dart';
 import 'platform_repository.dart';
 
@@ -198,6 +201,7 @@ class JoinApplication {
 }
 
 abstract class BuildingRepository {
+  ParkingRepository get parking;
   bool get isPlatformAdmin;
   PlatformRepository? get platform;
   Future<List<ResidentMember>> residents(String buildingId);
@@ -250,6 +254,11 @@ abstract class BuildingRepository {
 /// Repository boundary for the new product. This first adapter deliberately
 /// keeps all writes in memory; it never uses or mutates the shared Supabase DB.
 class LocalBuildingRepository implements BuildingRepository {
+  @override
+  late final ParkingRepository parking = LocalParkingRepository(
+    apartmentFor: (id) =>
+        _homes.where((h) => h.id == id).firstOrNull?.apartment,
+  );
   @override
   bool get isPlatformAdmin => false;
   @override
