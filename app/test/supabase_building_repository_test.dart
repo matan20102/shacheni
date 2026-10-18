@@ -42,6 +42,84 @@ http.Response response(Object? value, http.Request request) => http.Response(
 
 void main() {
   test(
+    'board failure does not hide accepted membership and retry recovers',
+    () async {
+      var fail = true;
+      final client = SupabaseClient(
+        'https://example.invalid',
+        'test-key',
+        httpClient: MockClient((request) async {
+          if (request.url.path.endsWith('ba_state')) {
+            return response({
+              'profile': {
+                'full_name': 'ניסים כהן',
+                'email': 'me@example.test',
+                'phone': '',
+              },
+              'homes': [home('approved')],
+              'applications': [],
+              'approval_updates': [
+                {
+                  'id': 'notice',
+                  'building_id': 'approved',
+                  'building_name': 'approved',
+                },
+              ],
+            }, request);
+          }
+          if (fail) {
+            return http.Response(
+              '{"message":"temporarily unavailable"}',
+              503,
+              headers: {'content-type': 'application/json'},
+            );
+          }
+          return response([post('approved')], request);
+        }),
+      );
+      addTearDown(client.dispose);
+      final repo = SupabaseBuildingRepository(client);
+      final vm = BuildingViewModel(repo);
+      addTearDown(vm.dispose);
+      await vm.initialize();
+      expect(vm.active!.id, 'approved');
+      expect(repo.profile.name, 'ניסים כהן');
+      expect(vm.approvalUpdates, hasLength(1));
+      expect(repo.boardError, isNotNull);
+      expect(vm.posts, isEmpty);
+      expect(vm.busy, isFalse);
+      fail = false;
+      await vm.synchronize();
+      expect(repo.boardError, isNull);
+      expect(vm.posts.single.buildingId, 'approved');
+    },
+  );
+  test('creating through view model loads state and board once', () async {
+    final calls = <String>[];
+    final client = SupabaseClient(
+      'https://example.invalid',
+      'test-key',
+      httpClient: MockClient((request) async {
+        final action = request.url.path.split('/').last;
+        calls.add(action);
+        return response(switch (action) {
+          'ba_create_home_v2' => 'created',
+          'ba_state' => {
+            'homes': [home('created')],
+            'applications': [],
+          },
+          _ => [],
+        }, request);
+      }),
+    );
+    addTearDown(client.dispose);
+    final vm = BuildingViewModel(SupabaseBuildingRepository(client));
+    addTearDown(vm.dispose);
+    await vm.create('', 'הגפן 1', '1', 1);
+    expect(calls, ['ba_create_home_v2', 'ba_state', 'ba_board']);
+    expect(vm.active!.id, 'created');
+  });
+  test(
     'approval updates are parsed and acknowledgement survives a fresh load',
     () async {
       var read = false;

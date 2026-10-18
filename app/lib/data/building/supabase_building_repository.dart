@@ -5,6 +5,10 @@ import 'building_repository.dart';
 class SupabaseBuildingRepository implements BuildingRepository {
   SupabaseBuildingRepository(this.client);
   final SupabaseClient client;
+  @override
+  ResidentProfile profile = const ResidentProfile();
+  @override
+  Object? boardError;
   List<BuildingHome> _homes = const [];
   List<JoinApplication> _applications = const [];
   List<ApprovalUpdate> _approvalUpdates = const [];
@@ -84,6 +88,12 @@ class SupabaseBuildingRepository implements BuildingRepository {
   Future<void> refresh({String? buildingId}) async {
     final version = ++_refreshVersion;
     final state = await client.rpc('ba_state') as Map<String, dynamic>;
+    final account = state['profile'] as Map<String, dynamic>?;
+    final nextProfile = ResidentProfile(
+      name: account?['full_name'] as String? ?? '',
+      email: account?['email'] as String? ?? '',
+      phone: account?['phone'] as String? ?? '',
+    );
     final nextHomes = List<BuildingHome>.unmodifiable([
       for (final j in state['homes'] as List)
         homeFromJson(j as Map<String, dynamic>),
@@ -105,23 +115,44 @@ class SupabaseBuildingRepository implements BuildingRepository {
         nextHomes.where((h) => h.id == buildingId).firstOrNull ??
         nextHomes.firstOrNull;
     List<BoardPost>? board;
+    Object? nextBoardError;
     if (selected != null) {
-      final response = await client.rpc(
-        'ba_board',
-        params: {'p_building': selected.id},
-      ) as List;
-      board = List.unmodifiable([
-        for (final j in response) postFromJson(j as Map<String, dynamic>),
-      ]);
+      try {
+        final response = await client.rpc(
+          'ba_board',
+          params: {'p_building': selected.id},
+        ) as List;
+        board = List.unmodifiable([
+          for (final j in response) postFromJson(j as Map<String, dynamic>),
+        ]);
+      } catch (error) {
+        // Membership and approval status must still advance if the board fails.
+        // Clear the selected cache rather than displaying potentially revoked data.
+        nextBoardError = error;
+      }
     }
     // A slow response for the previous building must not replace a newer state.
     if (version != _refreshVersion) return;
     _homes = nextHomes;
+    profile = nextProfile;
+    boardError = nextBoardError;
     _applications = nextApplications;
     _approvalUpdates = nextUpdates;
     _boards.removeWhere((id, _) => !_homes.any((h) => h.id == id));
-    if (selected != null) _boards[selected.id] = board!;
+    if (selected != null) _boards[selected.id] = board ?? const [];
   }
+
+  @override
+  Future<void> updateProfile(String name, String phone) => client.rpc(
+    'ba_update_profile',
+    params: {'p_name': name.trim(), 'p_phone': phone.trim()},
+  );
+  @override
+  Future<void> leave(BuildingHome home) =>
+      client.rpc('ba_leave', params: {'p_building': home.id});
+  @override
+  Future<void> archive(BuildingHome home) =>
+      client.rpc('ba_archive', params: {'p_building': home.id});
 
   @override
   Future<BuildingHome> createBuilding(
@@ -285,6 +316,11 @@ String buildingErrorMessage(Object error) {
       'LEGAL_NOT_ACCEPTED' => 'יש לאשר את תנאי השימוש לפני ההמשך.',
       'RATE_LIMITED' => 'בוצעו יותר מדי ניסיונות. אפשר לנסות שוב מאוחר יותר.',
       'POST_CLOSED' => 'הפרסום נסגר לתגובות.',
+      'LAST_BUILDING_ADMIN' =>
+        'מנהל הבניין האחרון צריך למנות מחליף או לארכב את הבניין לפני היציאה.',
+      'PHONE_INVALID' =>
+        'יש להזין מספר נייד ישראלי תקין, או להשאיר את השדה ריק.',
+      'PHONE_TAKEN' => 'מספר הטלפון כבר משויך לחשבון אחר.',
       'INVALID_ARGUMENT' => 'יש לבדוק את הפרטים שהזנת.',
       'INVALID_STATE' => 'הבקשה כבר השתנתה. נסה לרענן.',
       _ =>

@@ -6,6 +6,13 @@ import 'board_read_store.dart';
 
 enum PostKind { notice, request }
 
+@immutable
+class ResidentProfile {
+  const ResidentProfile({this.name = '', this.email = '', this.phone = ''});
+  final String name, email, phone;
+  String get firstName => name.trim().split(RegExp(r'\s+')).first;
+}
+
 String normalizeApartment(String value) =>
     value.trim().replaceFirst(RegExp(r'^0+(?=\d)'), '');
 
@@ -164,6 +171,11 @@ class JoinApplication {
 }
 
 abstract class BuildingRepository {
+  ResidentProfile get profile;
+  Object? get boardError;
+  FutureOr<void> updateProfile(String name, String phone);
+  FutureOr<void> leave(BuildingHome home);
+  FutureOr<void> archive(BuildingHome home);
   bool get isRemote;
   List<BuildingHome> get homes;
   List<JoinApplication> get applications;
@@ -207,6 +219,45 @@ abstract class BuildingRepository {
 /// Repository boundary for the new product. This first adapter deliberately
 /// keeps all writes in memory; it never uses or mutates the shared Supabase DB.
 class LocalBuildingRepository implements BuildingRepository {
+  @override
+  ResidentProfile profile = const ResidentProfile();
+  @override
+  Object? get boardError => null;
+  @override
+  void updateProfile(String name, String phone) {
+    if (name.trim().length < 2 || name.trim().length > 100) {
+      throw StateError('יש להזין שם באורך 2–100 תווים');
+    }
+    profile = ResidentProfile(
+      name: name.trim(),
+      phone: phone.trim(),
+      email: profile.email,
+    );
+  }
+
+  @override
+  void leave(BuildingHome home) {
+    if (!_homes.contains(home)) throw StateError('אין גישה לבניין');
+    if (home.isAdmin) {
+      throw StateError(
+        'מנהל הבניין האחרון צריך למנות מחליף או לארכב את הבניין לפני היציאה.',
+      );
+    }
+    _removeHome(home);
+  }
+
+  @override
+  void archive(BuildingHome home) {
+    if (!_homes.contains(home) || !home.isAdmin) throw StateError('אין הרשאה');
+    _removeHome(home);
+  }
+
+  void _removeHome(BuildingHome home) {
+    _homes.remove(home);
+    _applications.removeWhere((a) => a.building.id == home.id);
+    _approvalUpdates.removeWhere((a) => a.buildingId == home.id);
+  }
+
   LocalBuildingRepository({bool seed = true}) {
     if (!seed) return;
     _homes.addAll(const [
@@ -624,12 +675,15 @@ class BuildingViewModel extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
-  Future<void> run(FutureOr<void> Function() action) async {
+  Future<void> run(
+    FutureOr<void> Function() action, {
+    bool refresh = true,
+  }) async {
     _pendingOperations++;
     _notify();
     try {
       await action();
-      await repository.refresh(buildingId: _activeId);
+      if (refresh) await repository.refresh(buildingId: _activeId);
       if (!homes.any((h) => h.id == _activeId)) {
         _activeId = homes.firstOrNull?.id;
       }
@@ -665,7 +719,7 @@ class BuildingViewModel extends ChangeNotifier {
       );
       _activeId = home.id;
       tab = 0;
-    });
+    }, refresh: false); // Creation returns the refreshed, authoritative home.
   }
 
   @override

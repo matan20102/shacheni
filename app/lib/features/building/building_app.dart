@@ -11,6 +11,7 @@ import '../../data/building/supabase_building_repository.dart';
 import 'glass_widgets.dart';
 import 'address_picker.dart';
 import 'board_timeline.dart';
+import 'account_widgets.dart';
 
 String _apartmentLabel(BuildingHome home) => 'דירה ${home.apartment}';
 
@@ -174,6 +175,20 @@ class _BuildingExperienceState extends State<BuildingExperience>
         children: [
           _header(),
           if (vm.busy) const LinearProgressIndicator(minHeight: 2),
+          if (vm.repository.boardError != null)
+            MaterialBanner(
+              content: const Text(
+                'הבניין מעודכן, אבל לא הצלחנו לטעון את הלוח.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: vm.busy
+                      ? null
+                      : () => _perform(() {}, refresh: true),
+                  child: const Text('ניסיון נוסף'),
+                ),
+              ],
+            ),
           Expanded(
             child: Center(
               child: ConstrainedBox(
@@ -359,6 +374,14 @@ class _BuildingExperienceState extends State<BuildingExperience>
                 ),
               ),
             ),
+            AccountMenu(
+              profile: vm.repository.profile,
+              onProfile: _profile,
+              onBuilding: vm.active == null ? null : _buildingInfo,
+              onSignOut: widget.onSignOut == null
+                  ? null
+                  : () => _perform(widget.onSignOut!, refresh: false),
+            ),
           ],
         ),
       ),
@@ -370,7 +393,10 @@ class _BuildingExperienceState extends State<BuildingExperience>
     children: [
       const Eyebrow('טוב להיות בבית'),
       const SizedBox(height: 6),
-      Text('שלום, שכן 👋', style: Theme.of(context).textTheme.headlineLarge),
+      Text(
+        'שלום, ${vm.repository.profile.firstName.isEmpty ? 'שכן' : vm.repository.profile.firstName} 👋',
+        style: Theme.of(context).textTheme.headlineLarge,
+      ),
       const SizedBox(height: 6),
       const Text(
         'הדברים הקטנים שמחברים את הבניין.',
@@ -935,12 +961,6 @@ class _BuildingExperienceState extends State<BuildingExperience>
               icon: const Icon(Icons.link_rounded),
               label: const Text('הצטרפות עם קוד בניין'),
             ),
-            if (widget.onSignOut != null)
-              TextButton.icon(
-                onPressed: widget.onSignOut,
-                icon: const Icon(Icons.logout_rounded),
-                label: const Text('יציאה מהחשבון'),
-              ),
             if (vm.active?.isAdmin ?? false) ...[
               const SectionTitle('מזמינים את השכנים'),
               GlassPanel(
@@ -991,6 +1011,138 @@ class _BuildingExperienceState extends State<BuildingExperience>
       ),
     ),
   );
+
+  void _profile() => _sheet(
+    (ctx) => ProfileEditor(
+      profile: vm.repository.profile,
+      onSave: (name, phone) async {
+        await vm.run(() => vm.repository.updateProfile(name, phone));
+        if (ctx.mounted) Navigator.pop(ctx);
+      },
+    ),
+  );
+
+  void _buildingInfo() {
+    final home = vm.active;
+    if (home == null) return;
+    _sheet(
+      (ctx) => ListenableBuilder(
+        listenable: vm,
+        builder: (context, _) => SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'מידע וניהול הבניין',
+                style: Theme.of(ctx).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 20),
+              GlassPanel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(home.name, style: Theme.of(ctx).textTheme.titleLarge),
+                    if (home.address != home.name) Text(home.address),
+                    const SizedBox(height: 10),
+                    Text(
+                      '${_apartmentLabel(home)}${home.householdName.isEmpty ? '' : ' · ${home.householdName}'}',
+                    ),
+                    const SizedBox(height: 10),
+                    SoftTag(
+                      home.isAdmin ? 'מנהל בניין' : 'דייר בבניין',
+                      icon: Icons.verified_user_outlined,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                key: const Key('building-leave'),
+                onPressed: vm.busy
+                    ? null
+                    : () => _lifecycle(ctx, home, archive: false),
+                icon: const Icon(Icons.exit_to_app_rounded),
+                label: const Text('יציאה מהבניין'),
+              ),
+              if (home.isAdmin) ...[
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  key: const Key('building-archive'),
+                  onPressed: vm.busy
+                      ? null
+                      : () => _lifecycle(ctx, home, archive: true),
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: const Text('ארכוב הבניין'),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'ארכוב סוגר את הבניין לפעילות ולהצטרפות ושומר את ההיסטוריה.',
+                  style: TextStyle(color: glassMuted),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _lifecycle(
+    BuildContext sheet,
+    BuildingHome home, {
+    required bool archive,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: sheet,
+      builder: (ctx) => AlertDialog(
+        title: Text(archive ? 'לארכב את הבניין?' : 'לצאת מהבניין?'),
+        content: Text(
+          archive
+              ? 'הפעילות ב־${home.name} תיסגר לכל הדיירים, והצטרפות חדשה תיחסם. המידע וההיסטוריה יישמרו.'
+              : 'הגישה שלך ל־${home.name} תיסגר. כדי לחזור תידרש בקשת הצטרפות חדשה ואישור.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('ביטול'),
+          ),
+          FilledButton(
+            key: const Key('building-lifecycle-confirm'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(archive ? 'ארכוב הבניין' : 'יציאה מהבניין'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted || !sheet.mounted) return;
+    try {
+      await vm.run(
+        () => archive ? vm.repository.archive(home) : vm.repository.leave(home),
+      );
+    } catch (error) {
+      if (!sheet.mounted) return;
+      await showDialog<void>(
+        context: sheet,
+        builder: (ctx) => AlertDialog(
+          title: const Text('לא ניתן להשלים את הפעולה'),
+          content: Text(buildingErrorMessage(error)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('הבנתי'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (mounted && sheet.mounted) {
+      Navigator.pop(sheet);
+      vm.navigate(0);
+      _message(archive ? 'הבניין הועבר לארכיון' : 'יצאת מהבניין');
+    }
+  }
 
   Future<bool> _perform(
     FutureOr<void> Function() action, {
@@ -1051,7 +1203,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
             floor: floor,
             householdName: householdName,
           );
-        });
+        }, refresh: false); // apply() already reloads the application state.
         if (!ctx.mounted || !mounted) return;
         Navigator.pop(ctx);
         _message('הבקשה נשלחה. נעדכן אותך כשההצטרפות תאושר.');
@@ -1163,7 +1315,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
                                 : () => _approve(application, true),
                             child: Text(
                               vm.live
-                                  ? 'אישור כמנהל הבניין'
+                                  ? 'אישור הצטרפות לבניין'
                                   : 'הדמיית אישור מנהל הבניין',
                             ),
                           ),
@@ -1176,7 +1328,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
                                 : () => _approve(application, false),
                             child: Text(
                               vm.live
-                                  ? 'אישור כמנהל הדירה'
+                                  ? 'אישור הצטרפות לדירה'
                                   : 'הדמיית אישור מנהל הדירה',
                             ),
                           ),

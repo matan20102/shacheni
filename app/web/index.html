@@ -33,6 +33,19 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <script>
+    // Old shared welcome links now open the single app entry point. Leave OAuth
+    // query parameters and token fragments untouched.
+    function normalizeLegacyWelcome(event) {
+      if (window.location.hash === '#/welcome') {
+        window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+        if (event) event.stopImmediatePropagation();
+      }
+    }
+    normalizeLegacyWelcome();
+    window.addEventListener('popstate', normalizeLegacyWelcome, true);
+    window.addEventListener('hashchange', normalizeLegacyWelcome, true);
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
