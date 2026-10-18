@@ -8,10 +8,13 @@ import 'package:shacheni_app/features/building/glass_widgets.dart';
 
 import 'building_experience_test.dart' show harness;
 
-Future<void> openBuilding(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('account-menu')));
+Future<void> openBuilding(
+  WidgetTester tester, {
+  String buildingId = 'garden',
+}) async {
+  await tester.tap(find.byKey(const Key('building-selector')));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('מידע וניהול הבניין'));
+  await tester.tap(find.byKey(ValueKey('building-info-$buildingId')));
   await tester.pumpAndSettle();
 }
 
@@ -94,6 +97,7 @@ void main() {
     await tester.tap(find.byKey(const Key('account-menu')));
     await tester.pumpAndSettle();
     expect(tester.getTopLeft(find.text('הפרופיל שלי')).dy, lessThan(250));
+    expect(find.text('מידע וניהול הבניין'), findsNothing);
     await tester.tap(find.text('הפרופיל שלי'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('profile-name')), 'ניסים כהן');
@@ -103,6 +107,40 @@ void main() {
     expect(find.text('שלום, ניסים 👋'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'building management opens the chosen building without switching homes',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final repo = LocalBuildingRepository();
+      final vm = BuildingViewModel(repo)..enter();
+      addTearDown(vm.dispose);
+      await tester.pumpWidget(harness(vm));
+      await tester.pumpAndSettle();
+      await openBuilding(tester, buildingId: 'olive');
+      expect(vm.active!.id, 'garden');
+      expect(
+        find.byKey(const ValueKey('resident-neighbor-2-olive')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('resident-neighbor-2-garden')),
+        findsNothing,
+      );
+      expect(find.byKey(const Key('building-archive')), findsNothing);
+      final leave = find.byKey(const Key('building-leave'));
+      await tester.ensureVisible(leave);
+      await tester.pumpAndSettle();
+      await tester.tap(leave);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('building-lifecycle-confirm')));
+      await tester.pumpAndSettle();
+      expect(repo.homes.single.id, 'garden');
+      expect(vm.active!.id, 'garden');
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'last admin is blocked, cancelling archive preserves home, confirming switches home',
@@ -155,7 +193,7 @@ void main() {
     addTearDown(vm.dispose);
     await tester.pumpWidget(harness(vm));
     await tester.pumpAndSettle();
-    await openBuilding(tester);
+    await openBuilding(tester, buildingId: 'olive');
     expect(find.byKey(const Key('building-archive')), findsNothing);
     await tester.ensureVisible(find.byKey(const Key('building-leave')));
     await tester.pumpAndSettle();

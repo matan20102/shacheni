@@ -391,7 +391,6 @@ class _BuildingExperienceState extends State<BuildingExperience>
                   ? _platformConsole
                   : null,
               onProfile: _profile,
-              onBuilding: vm.active == null ? null : _buildingInfo,
               onSignOut: widget.onSignOut == null
                   ? null
                   : () => _perform(widget.onSignOut!, refresh: false),
@@ -933,27 +932,47 @@ class _BuildingExperienceState extends State<BuildingExperience>
                 padding: const EdgeInsets.only(bottom: 10),
                 child: GlassPanel(
                   padding: EdgeInsets.zero,
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.apartment_rounded,
-                      color: glassTeal,
-                    ),
-                    title: Text(home.name),
-                    subtitle: Text(
-                      '${home.address} · ${_apartmentLabel(home)}',
-                    ),
-                    trailing: home.id == vm.active?.id
-                        ? const Icon(
-                            Icons.check_circle_rounded,
-                            color: glassTeal,
-                          )
-                        : null,
-                    onTap: () {
-                      unawaited(
-                        _perform(() => vm.select(home.id), refresh: false),
-                      );
-                      Navigator.pop(ctx);
-                    },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ListTile(
+                        leading: const Icon(
+                          Icons.apartment_rounded,
+                          color: glassTeal,
+                        ),
+                        title: Text(home.name),
+                        subtitle: Text(
+                          '${home.address} · ${_apartmentLabel(home)}',
+                        ),
+                        trailing: home.id == vm.active?.id
+                            ? const Icon(
+                                Icons.check_circle_rounded,
+                                color: glassTeal,
+                              )
+                            : null,
+                        onTap: () {
+                          unawaited(
+                            _perform(() => vm.select(home.id), refresh: false),
+                          );
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton.icon(
+                          key: ValueKey('building-info-${home.id}'),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _buildingInfo(home.id);
+                          },
+                          icon: const Icon(
+                            Icons.info_outline_rounded,
+                            size: 18,
+                          ),
+                          label: const Text('מידע וניהול הבניין'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1036,13 +1055,11 @@ class _BuildingExperienceState extends State<BuildingExperience>
     ),
   );
 
-  void _buildingInfo() {
-    final home = vm.active;
-    if (home == null) return;
+  void _buildingInfo(String buildingId) {
     _sheet(
       (ctx) => BuildingManagementSheet(
         vm: vm,
-        buildingId: home.id,
+        buildingId: buildingId,
         onLeave: (context, home) => _lifecycle(context, home, archive: false),
         onArchive: (context, home) => _lifecycle(context, home, archive: true),
       ),

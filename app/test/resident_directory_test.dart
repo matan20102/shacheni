@@ -5,10 +5,13 @@ import 'package:shacheni_app/features/building/resident_directory.dart';
 
 import 'building_experience_test.dart' show harness;
 
-Future<void> directory(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('account-menu')));
+Future<void> directory(
+  WidgetTester tester, {
+  String buildingId = 'garden',
+}) async {
+  await tester.tap(find.byKey(const Key('building-selector')));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('מידע וניהול הבניין'));
+  await tester.tap(find.byKey(ValueKey('building-info-$buildingId')));
   await tester.pumpAndSettle();
 }
 
@@ -67,8 +70,10 @@ void main() {
       await tester.tap(find.byKey(const Key('account-menu')));
       await tester.pumpAndSettle();
       expect(find.text('ניהול המערכת'), findsNothing);
-      await tester.tap(find.text('מידע וניהול הבניין'));
+      expect(find.text('מידע וניהול הבניין'), findsNothing);
+      await tester.tapAt(const Offset(10, 500));
       await tester.pumpAndSettle();
+      await directory(tester, buildingId: 'olive');
       final row = find.byKey(const ValueKey('resident-neighbor-2-olive'));
       await tester.ensureVisible(row);
       await tester.pumpAndSettle();

@@ -181,9 +181,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('account-menu')));
+    await tester.tap(find.byKey(const Key('building-selector')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('מידע וניהול הבניין'));
+    await tester.tap(find.byKey(const ValueKey('building-info-garden')));
     await tester.pumpAndSettle();
     final resident = find.byKey(const ValueKey('resident-neighbor-2-garden'));
     await tester.ensureVisible(resident);
