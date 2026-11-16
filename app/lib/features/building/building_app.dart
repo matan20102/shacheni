@@ -10,6 +10,7 @@ import '../../app/brand.dart';
 import '../../app/config.dart';
 import '../../data/building/supabase_building_repository.dart';
 import 'glass_widgets.dart';
+import 'invite_qr.dart';
 import 'address_picker.dart';
 import 'board_search.dart';
 import 'board_timeline.dart';
@@ -1091,10 +1092,22 @@ class _BuildingExperienceState extends State<BuildingExperience>
                               'הצטרפו ל״${home.name}״ ב$appNameHebrew:\n${inviteLink(home.code)}\nקוד הבניין: ${home.code}',
                         ),
                       );
-                      if (mounted) _message('ההזמנה הועתקה. אפשר להדביק ולשלוח.');
+                      if (mounted) {
+                        _message('ההזמנה הועתקה. אפשר להדביק ולשלוח.');
+                      }
                     },
                     icon: const Icon(Icons.link_rounded, size: 18),
                     label: const Text('העתקת הזמנה עם קישור'),
+                  ),
+                  TextButton.icon(
+                    key: const Key('building-invite-qr'),
+                    onPressed: () => showInvitePoster(
+                      context,
+                      name: vm.active!.name,
+                      code: vm.active!.code,
+                    ),
+                    icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+                    label: const Text('קוד QR ללובי'),
                   ),
                   TextButton.icon(
                     key: const Key('building-code-rotate'),
