@@ -7,9 +7,11 @@ import 'package:flutter/widget_previews.dart';
 
 import '../../data/building/building_repository.dart';
 import '../../app/brand.dart';
+import '../../app/config.dart';
 import '../../data/building/supabase_building_repository.dart';
 import 'glass_widgets.dart';
 import 'address_picker.dart';
+import 'board_search.dart';
 import 'board_timeline.dart';
 import 'account_widgets.dart';
 import 'resident_directory.dart';
@@ -36,9 +38,19 @@ class BuildingPreviewApp extends StatelessWidget {
 Widget buildingExperiencePreview() => const BuildingPreviewApp();
 
 class BuildingExperience extends StatefulWidget {
-  const BuildingExperience({super.key, this.viewModel, this.onSignOut});
+  const BuildingExperience({
+    super.key,
+    this.viewModel,
+    this.onSignOut,
+    this.initialJoinCode,
+    this.onJoinCodeUsed,
+  });
   final BuildingViewModel? viewModel;
   final Future<void> Function()? onSignOut;
+
+  /// Code from an invitation link; opens the join form once.
+  final String? initialJoinCode;
+  final VoidCallback? onJoinCodeUsed;
   @override
   State<BuildingExperience> createState() => _BuildingExperienceState();
 }
@@ -55,6 +67,14 @@ class _BuildingExperienceState extends State<BuildingExperience>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _startSync();
+    final invited = widget.initialJoinCode;
+    if (invited != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        widget.onJoinCodeUsed?.call();
+        if (!vm.homes.any((h) => h.code == invited)) _join(code: invited);
+      });
+    }
   }
 
   void _startSync() {
@@ -514,7 +534,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
                       : Icons.forum_outlined,
                   vm.active == null ? 'הצטרפות לבניין' : 'לוח הבניין',
                   vm.active == null ? 'עם הקוד שקיבלת' : 'מה חדש אצל השכנים',
-                  vm.active == null ? _join : () => _navigate(1),
+                  vm.active == null ? () => _join() : () => _navigate(1),
                 ),
               ),
             ],
@@ -616,6 +636,13 @@ class _BuildingExperienceState extends State<BuildingExperience>
                   ],
                 ),
               ),
+              IconButton(
+                key: const Key('board-search'),
+                onPressed: vm.active == null ? null : _search,
+                tooltip: 'חיפוש ופרסומים קודמים',
+                icon: const Icon(Icons.search_rounded),
+              ),
+              const SizedBox(width: 4),
               IconButton.filled(
                 key: const Key('board-new-post'),
                 onPressed: vm.active == null ? null : _compose,
@@ -863,8 +890,8 @@ class _BuildingExperienceState extends State<BuildingExperience>
         ),
       if (post.mine || (vm.active?.isAdmin ?? false))
         const PopupMenuItem(value: 'delete', child: Text('מחיקת פרסום')),
-      if (!post.mine && !(vm.active?.isAdmin ?? false))
-        const PopupMenuItem(enabled: false, child: Text('פרסום של שכן')),
+      if (!post.mine)
+        const PopupMenuItem(value: 'report', child: Text('דיווח והסתרה')),
     ],
   );
 
@@ -1051,6 +1078,32 @@ class _BuildingExperienceState extends State<BuildingExperience>
                   ],
                 ),
               ),
+              Wrap(
+                spacing: 8,
+                children: [
+                  TextButton.icon(
+                    key: const Key('building-invite-copy'),
+                    onPressed: () async {
+                      final home = vm.active!;
+                      await Clipboard.setData(
+                        ClipboardData(
+                          text:
+                              'הצטרפו ל״${home.name}״ ב$appNameHebrew:\n${inviteLink(home.code)}\nקוד הבניין: ${home.code}',
+                        ),
+                      );
+                      if (mounted) _message('ההזמנה הועתקה. אפשר להדביק ולשלוח.');
+                    },
+                    icon: const Icon(Icons.link_rounded, size: 18),
+                    label: const Text('העתקת הזמנה עם קישור'),
+                  ),
+                  TextButton.icon(
+                    key: const Key('building-code-rotate'),
+                    onPressed: vm.busy ? null : () => _rotateCode(vm.active!),
+                    icon: const Icon(Icons.autorenew_rounded, size: 18),
+                    label: const Text('החלפת הקוד'),
+                  ),
+                ],
+              ),
               const SizedBox(height: 10),
               Text(
                 vm.live
@@ -1072,6 +1125,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
         await vm.run(() => vm.repository.updateProfile(name, phone));
         if (ctx.mounted) Navigator.pop(ctx);
       },
+      onDelete: widget.onSignOut == null ? null : () => _deleteAccount(ctx),
     ),
   );
 
@@ -1201,9 +1255,10 @@ class _BuildingExperienceState extends State<BuildingExperience>
     );
   }
 
-  void _join() => _sheet(
+  void _join({String? code}) => _sheet(
     (ctx) => _JoinForm(
       repository: vm.repository,
+      initialCode: code,
       onApply: (home, apartment, floor, householdName) async {
         await vm.run(() async {
           await vm.repository.apply(
@@ -1223,6 +1278,8 @@ class _BuildingExperienceState extends State<BuildingExperience>
   void _applications() {
     final updates = <ApprovalUpdate>[];
     final queuedReadIds = <String>{};
+    final notes = <BuildingUpdate>[];
+    final queuedNoteIds = <String>{};
     unawaited(
       _sheet(
         (ctx) => ListenableBuilder(
@@ -1246,6 +1303,24 @@ class _BuildingExperienceState extends State<BuildingExperience>
                 );
               });
             }
+            // Updates stay on screen while the sheet is open, and are marked
+            // read once, the same way accepted requests are.
+            for (final note in vm.updates) {
+              if (!notes.any((shown) => shown.id == note.id)) notes.add(note);
+            }
+            final unreadNotes = vm.updates
+                .where((note) => !queuedNoteIds.contains(note.id))
+                .map((note) => note.id)
+                .toList();
+            if (unreadNotes.isNotEmpty) {
+              queuedNoteIds.addAll(unreadNotes);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!ctx.mounted) return;
+                unawaited(
+                  _perform(() => vm.repository.readUpdates(unreadNotes)),
+                );
+              });
+            }
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
               child: Column(
@@ -1261,7 +1336,10 @@ class _BuildingExperienceState extends State<BuildingExperience>
                     style: TextStyle(color: glassMuted),
                   ),
                   const SizedBox(height: 20),
-                  if (updates.isEmpty && vm.pending.isEmpty && vm.inbox.isEmpty)
+                  if (updates.isEmpty &&
+                      notes.isEmpty &&
+                      vm.pending.isEmpty &&
+                      vm.inbox.isEmpty)
                     const GlassPanel(
                       child: _FeatureLine(
                         Icons.check_circle_outline,
@@ -1297,6 +1375,18 @@ class _BuildingExperienceState extends State<BuildingExperience>
                             label: const Text('לפתוח את הבניין'),
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  for (final note in notes) ...[
+                    GlassPanel(
+                      key: ValueKey('building-update-${note.id}'),
+                      child: Builder(
+                        builder: (_) {
+                          final view = _updateText(note);
+                          return _FeatureLine(view.icon, view.title, view.body);
+                        },
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1351,6 +1441,13 @@ class _BuildingExperienceState extends State<BuildingExperience>
                                 () => vm.repository.withdraw(application.id),
                               ),
                         child: const Text('ביטול הבקשה'),
+                      )
+                    else if (application.canApproveBuilding ||
+                        application.canApproveApartment)
+                      TextButton(
+                        key: ValueKey('application-reject-${application.id}'),
+                        onPressed: vm.busy ? null : () => _reject(application),
+                        child: const Text('דחיית הבקשה'),
                       ),
                     const SizedBox(height: 20),
                   ],
@@ -1481,7 +1578,210 @@ class _BuildingExperienceState extends State<BuildingExperience>
         if (confirmed == true) {
           await _perform(() => vm.repository.remove(post.id, vm.active!));
         }
+      case 'report':
+        await _report(post.id);
     }
+  }
+
+  void _search() {
+    final home = vm.active;
+    if (home == null) return;
+    _sheet(
+      (ctx) => BoardSearch(repository: vm.repository, buildingId: home.id),
+    );
+  }
+
+  /// Reports a post or reply to the building managers and hides it here.
+  Future<void> _report(String postId, {String? replyId}) async {
+    var reason = '';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('לדווח למנהלי הבניין?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'התוכן יוסתר אצלך, ומנהלי הבניין יחליטו אם להסיר אותו. הכותב לא יראה מי דיווח.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              key: const Key('report-reason'),
+              maxLength: 300,
+              maxLines: 2,
+              onChanged: (value) => reason = value,
+              decoration: const InputDecoration(
+                labelText: 'מה הבעיה? (לא חובה)',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('ביטול'),
+          ),
+          FilledButton(
+            key: const Key('report-confirm'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('דיווח והסתרה'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final sent = await _perform(
+      () => vm.repository.report(postId, replyId: replyId, reason: reason),
+    );
+    if (sent && mounted) _message('הדיווח נשלח למנהלי הבניין.');
+  }
+
+  Future<void> _reject(JoinApplication a) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('לדחות את הבקשה של ${a.applicantName}?'),
+        content: const Text(
+          'המבקש יקבל עדכון שהבקשה לא אושרה, ויוכל לשלוח בקשה חדשה.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('ביטול'),
+          ),
+          FilledButton(
+            key: const Key('application-reject-confirm'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('דחיית הבקשה'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _perform(() => vm.repository.reject(a.id));
+  }
+
+  Future<void> _rotateCode(BuildingHome home) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('להחליף את קוד ההצטרפות?'),
+        content: const Text(
+          'הקוד הנוכחי וההזמנות שנשלחו איתו יפסיקו לעבוד. דיירים שכבר הצטרפו לא יושפעו.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('ביטול'),
+          ),
+          FilledButton(
+            key: const Key('building-code-rotate-confirm'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('החלפת הקוד'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final changed = await _perform(() => vm.repository.rotateCode(home));
+    if (changed && mounted) _message('קוד הבניין הוחלף');
+  }
+
+  Future<void> _deleteAccount(BuildContext sheet) async {
+    final confirmed = await showDialog<bool>(
+      context: sheet,
+      builder: (ctx) => AlertDialog(
+        title: const Text('למחוק את החשבון?'),
+        content: const Text(
+          'השם, הטלפון, החברות בבניינים, הפרסומים והתגובות שלך יימחקו. אי אפשר לשחזר את החשבון לאחר המחיקה.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('ביטול'),
+          ),
+          FilledButton(
+            key: const Key('account-delete-confirm'),
+            style: FilledButton.styleFrom(backgroundColor: glassError),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('מחיקת החשבון'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted || !sheet.mounted) return;
+    try {
+      await vm.run(() => vm.repository.deleteAccount(), refresh: false);
+    } catch (error) {
+      if (!sheet.mounted) return;
+      await showDialog<void>(
+        context: sheet,
+        builder: (ctx) => AlertDialog(
+          title: const Text('לא ניתן למחוק את החשבון כעת'),
+          content: Text(buildingErrorMessage(error)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('הבנתי'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (sheet.mounted) Navigator.pop(sheet);
+    // The server already ended every session; this clears the device.
+    await _perform(() => widget.onSignOut?.call(), refresh: false);
+  }
+
+  ({IconData icon, String title, String body}) _updateText(BuildingUpdate u) {
+    final when = u.startsAt == null ? '' : ' · ${parkingTime(u.startsAt!)}';
+    final quote = u.text.isEmpty ? '' : '\n״${u.text}״';
+    return switch (u.type) {
+      'community.application_rejected' => (
+        icon: Icons.info_outline_rounded,
+        title: 'הבקשה לא אושרה',
+        body:
+            'בקשת ההצטרפות ל${u.buildingName} לא אושרה. אפשר לבדוק את הפרטים ולשלוח בקשה חדשה.',
+      ),
+      'community.member_removed' => (
+        icon: Icons.info_outline_rounded,
+        title: 'החברות בבניין הסתיימה',
+        body: 'מנהל הבניין הסיר את החברות שלך ב${u.buildingName}.',
+      ),
+      'board.reply' => (
+        icon: Icons.chat_bubble_outline_rounded,
+        title: 'תגובה חדשה לפרסום שלך',
+        body: '${u.buildingName}$quote',
+      ),
+      'board.report' => (
+        icon: Icons.flag_outlined,
+        title: 'דיווח על תוכן בלוח',
+        body:
+            '${u.buildingName}$quote\nאפשר לטפל בדיווח ממסך מידע וניהול הבניין.',
+      ),
+      'parking.booked' => (
+        icon: Icons.local_parking_rounded,
+        title: 'החניה שלכם הוזמנה',
+        body: 'חניה ${u.text}$when · ${u.buildingName}',
+      ),
+      'parking.booking_cancelled' => (
+        icon: Icons.local_parking_rounded,
+        title: 'הזמנת חניה בוטלה',
+        body: 'חניה ${u.text}$when חזרה להיות פנויה לשכנים.',
+      ),
+      'parking.offer_cancelled' => (
+        icon: Icons.local_parking_rounded,
+        title: 'שיתוף החניה בוטל',
+        body: 'חניה ${u.text}$when כבר אינה שמורה לך.',
+      ),
+      _ => (
+        icon: Icons.notifications_none_rounded,
+        title: 'עדכון חדש',
+        body: u.buildingName,
+      ),
+    };
   }
 
   void _message(String text) => ScaffoldMessenger.of(context).showSnackBar(
@@ -1783,7 +2083,12 @@ Widget _apartmentField(
 );
 
 class _JoinForm extends StatefulWidget {
-  const _JoinForm({required this.repository, required this.onApply});
+  const _JoinForm({
+    required this.repository,
+    required this.onApply,
+    this.initialCode,
+  });
+  final String? initialCode;
   final BuildingRepository repository;
   final Future<void> Function(BuildingHome, String, String?, String) onApply;
   @override
@@ -1835,6 +2140,17 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
           checkingApartment = false;
         });
       }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final invited = widget.initialCode;
+    if (invited == null) return;
+    code.text = invited;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _checkCode();
     });
   }
 
@@ -2108,6 +2424,70 @@ class _ConversationState extends State<_Conversation>
     super.dispose();
   }
 
+  Widget _replyMenu(BoardReply r, BoardPost post) {
+    final admin = widget.vm.active?.isAdmin ?? false;
+    return PopupMenuButton<String>(
+      key: ValueKey('reply-menu-${r.id}'),
+      tooltip: 'אפשרויות תגובה',
+      iconSize: 18,
+      padding: EdgeInsets.zero,
+      enabled: !submitting,
+      onSelected: (value) => _replyAction(value, r, post),
+      itemBuilder: (_) => [
+        if (r.mine)
+          const PopupMenuItem(value: 'edit', child: Text('עריכת תגובה')),
+        if (r.mine || admin)
+          const PopupMenuItem(value: 'delete', child: Text('מחיקת תגובה')),
+        if (!r.mine)
+          const PopupMenuItem(value: 'report', child: Text('דיווח והסתרה')),
+      ],
+    );
+  }
+
+  Future<void> _replyAction(String action, BoardReply r, BoardPost post) async {
+    final repository = widget.vm.repository;
+    switch (action) {
+      case 'edit':
+        var text = r.text;
+        final saved = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('עריכת תגובה'),
+            content: TextFormField(
+              key: const Key('reply-edit-text'),
+              initialValue: r.text,
+              autofocus: true,
+              minLines: 1,
+              maxLines: 4,
+              maxLength: 1000,
+              onChanged: (value) => text = value,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('ביטול'),
+              ),
+              FilledButton(
+                key: const Key('reply-edit-save'),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('שמירה'),
+              ),
+            ],
+          ),
+        );
+        if (saved != true || !mounted || text.trim().isEmpty) return;
+        await submit(
+          () => widget.vm.run(() => repository.editReply(r.id, text)),
+        );
+      case 'delete':
+        await submit(() => widget.vm.run(() => repository.removeReply(r.id)));
+      case 'report':
+        await submit(
+          () => widget.vm.run(() => repository.report(post.id, replyId: r.id)),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.vm,
@@ -2187,13 +2567,28 @@ class _ConversationState extends State<_Conversation>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    r.mine ? 'אני' : r.author,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: glassTeal,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          r.mine ? 'אני' : r.author,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: glassTeal,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      if (r.edited)
+                                        const Text(
+                                          'נערך',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: glassMuted,
+                                          ),
+                                        ),
+                                      if (r.id.isNotEmpty) _replyMenu(r, post),
+                                    ],
                                   ),
                                   const SizedBox(height: 5),
                                   Text(r.text),

@@ -107,9 +107,17 @@ class AccountMenu extends StatelessWidget {
 }
 
 class ProfileEditor extends StatefulWidget {
-  const ProfileEditor({super.key, required this.profile, required this.onSave});
+  const ProfileEditor({
+    super.key,
+    required this.profile,
+    required this.onSave,
+    this.onDelete,
+  });
   final ResidentProfile profile;
   final Future<void> Function(String name, String phone) onSave;
+
+  /// Shown only where an account can actually be deleted.
+  final VoidCallback? onDelete;
   @override
   State<ProfileEditor> createState() => _ProfileEditorState();
 }
@@ -227,6 +235,21 @@ class _ProfileEditorState extends State<ProfileEditor> {
               child: Text(saving ? 'שומר…' : 'שמירת פרופיל'),
             ),
           ),
+          if (widget.onDelete != null) ...[
+            const SizedBox(height: 20),
+            const Divider(),
+            TextButton.icon(
+              key: const Key('account-delete'),
+              onPressed: saving ? null : widget.onDelete,
+              style: TextButton.styleFrom(foregroundColor: glassError),
+              icon: const Icon(Icons.delete_outline_rounded),
+              label: const Text('מחיקת החשבון'),
+            ),
+            const Text(
+              'מוחק את הפרטים, החברות בבניינים והתוכן שכתבת.',
+              style: TextStyle(color: glassMuted, fontSize: 12),
+            ),
+          ],
         ],
       ),
     ),

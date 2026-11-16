@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'building_repository.dart';
@@ -6,8 +8,11 @@ import 'parking_repository.dart';
 export 'building_error.dart' show buildingErrorMessage;
 
 class SupabaseBuildingRepository implements BuildingRepository {
-  SupabaseBuildingRepository(this.client);
+  SupabaseBuildingRepository(this.client, {this.realtime = false});
   final SupabaseClient client;
+
+  /// Subscribes to the building signal. Off unless the app owns a live client.
+  final bool realtime;
   @override
   late final ParkingRepository parking = SupabaseParkingRepository(client);
   @override
@@ -43,6 +48,7 @@ class SupabaseBuildingRepository implements BuildingRepository {
   List<BuildingHome> _homes = const [];
   List<JoinApplication> _applications = const [];
   List<ApprovalUpdate> _approvalUpdates = const [];
+  List<BuildingUpdate> _notes = const [];
   final _boards = <String, List<BoardPost>>{};
   int _refreshVersion = 0;
   @override
@@ -71,6 +77,7 @@ class SupabaseBuildingRepository implements BuildingRepository {
     isApartmentAdmin: j['is_apartment_admin'] == true,
     householdName: (j['household_name'] as String?) ?? '',
     entrance: j['entrance'] as String?,
+    openReports: (j['open_reports'] as num?)?.toInt() ?? 0,
   );
   static JoinApplication applicationFromJson(Map<String, dynamic> j) =>
       JoinApplication(
@@ -104,12 +111,15 @@ class SupabaseBuildingRepository implements BuildingRepository {
     mine: j['mine'] == true,
     pinned: j['pinned'] == true,
     closed: j['closed'] == true,
+    edited: j['edited'] == true,
     replies: List.unmodifiable([
       for (final r in j['replies'] as List)
         BoardReply(
           r['author'] as String,
           r['text'] as String,
           mine: r['mine'] == true,
+          id: (r['id'] as String?) ?? '',
+          edited: r['edited'] == true,
         ),
     ]),
     reactions: Map.unmodifiable({
@@ -146,6 +156,19 @@ class SupabaseBuildingRepository implements BuildingRepository {
             buildingName: j['building_name'] as String,
           ),
     ]);
+    final nextNotes = List<BuildingUpdate>.unmodifiable([
+      for (final j in (state['notifications'] as List? ?? const []))
+        BuildingUpdate(
+          id: j['id'] as String,
+          type: j['type'] as String,
+          buildingId: j['building_id'] as String,
+          buildingName: (j['building_name'] as String?) ?? '',
+          text: (j['text'] as String?) ?? '',
+          startsAt: j['starts_at'] == null
+              ? null
+              : DateTime.parse(j['starts_at'] as String).toLocal(),
+        ),
+    ]);
     final selected =
         nextHomes.where((h) => h.id == buildingId).firstOrNull ??
         nextHomes.firstOrNull;
@@ -174,6 +197,7 @@ class SupabaseBuildingRepository implements BuildingRepository {
     boardError = nextBoardError;
     _applications = nextApplications;
     _approvalUpdates = nextUpdates;
+    _notes = nextNotes;
     _boards.removeWhere((id, _) => !_homes.any((h) => h.id == id));
     if (selected != null) _boards[selected.id] = board ?? const [];
   }
@@ -341,4 +365,127 @@ class SupabaseBuildingRepository implements BuildingRepository {
   Future<void> pin(String id, BuildingHome home) => _action(id, 'pin');
   @override
   Future<void> remove(String id, BuildingHome home) => _action(id, 'delete');
+
+  @override
+  List<BuildingUpdate> get updates => _notes;
+  @override
+  Future<void> readUpdates(List<String> ids) =>
+      client.rpc('ba_read_notifications', params: {'p_ids': ids});
+  @override
+  Future<void> reject(String id) =>
+      client.rpc('ba_reject', params: {'p_member': id});
+  @override
+  Future<void> removeMember(String memberId) =>
+      client.rpc('ba_remove_member', params: {'p_member': memberId});
+  @override
+  Future<void> deleteAccount() => client.rpc('ba_delete_account');
+  @override
+  Future<String> rotateCode(BuildingHome home) async =>
+      await client.rpc('ba_rotate_code', params: {'p_building': home.id})
+          as String;
+  @override
+  Future<void> editReply(String replyId, String text) => client.rpc(
+    'ba_reply_action',
+    params: {'p_reply': replyId, 'p_action': 'edit', 'p_text': text.trim()},
+  );
+  @override
+  Future<void> removeReply(String replyId) => client.rpc(
+    'ba_reply_action',
+    params: {'p_reply': replyId, 'p_action': 'delete'},
+  );
+  @override
+  Future<void> report(
+    String postId, {
+    String? replyId,
+    String reason = '',
+  }) => client.rpc(
+    'ba_report',
+    params: {'p_post': postId, 'p_reply': replyId, 'p_reason': reason.trim()},
+  );
+  @override
+  Future<List<BoardReport>> reports(String buildingId) async =>
+      List.unmodifiable([
+        for (final j in await client.rpc(
+          'ba_reports',
+          params: {'p_building': buildingId},
+        ) as List)
+          BoardReport(
+            postId: j['post_id'] as String,
+            replyId: j['reply_id'] as String?,
+            text: (j['text'] as String?) ?? '',
+            author: (j['author'] as String?) ?? '',
+            apartment: (j['apartment'] as String?) ?? '',
+            postText: (j['post_text'] as String?) ?? '',
+            count: (j['count'] as num?)?.toInt() ?? 1,
+            reasons: List.unmodifiable(
+              ((j['reasons'] as List?) ?? const []).cast<String>(),
+            ),
+          ),
+      ]);
+  @override
+  Future<void> resolveReport(BoardReport report, {required bool remove}) =>
+      client.rpc(
+        'ba_report_resolve',
+        params: {
+          'p_post': report.postId,
+          'p_reply': report.replyId,
+          'p_remove': remove,
+        },
+      );
+  @override
+  Future<BoardPage> boardPage(
+    String buildingId, {
+    DateTime? before,
+    String query = '',
+  }) async {
+    final result = await client.rpc(
+      'ba_board_page',
+      params: {
+        'p_building': buildingId,
+        'p_before': before?.toUtc().toIso8601String(),
+        'p_query': query.trim().isEmpty ? null : query.trim(),
+      },
+    ) as Map<String, dynamic>;
+    return BoardPage(
+      List.unmodifiable([
+        for (final j in result['posts'] as List)
+          postFromJson(j as Map<String, dynamic>),
+      ]),
+      hasMore: result['has_more'] == true,
+    );
+  }
+
+  @override
+  Stream<void> changes(String buildingId) {
+    if (!realtime) return const Stream<void>.empty();
+    RealtimeChannel? channel;
+    late final StreamController<void> controller;
+    controller = StreamController<void>(
+      onListen: () {
+        channel = client
+            .channel('community-signal-$buildingId')
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'community_signal',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'building_id',
+                value: buildingId,
+              ),
+              callback: (_) {
+                if (!controller.isClosed) controller.add(null);
+              },
+            )
+            .subscribe();
+      },
+      onCancel: () async {
+        final active = channel;
+        channel = null;
+        if (active != null) await client.removeChannel(active);
+        await controller.close();
+      },
+    );
+    return controller.stream;
+  }
 }

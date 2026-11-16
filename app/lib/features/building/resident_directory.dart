@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/building/building_repository.dart';
 import '../../data/building/resident_directory_model.dart';
 import '../../data/building/supabase_building_repository.dart';
+import 'board_reports.dart';
 import 'glass_widgets.dart';
 
 class BuildingManagementSheet extends StatelessWidget {
@@ -64,6 +65,12 @@ class BuildingManagementSheet extends StatelessWidget {
               vm: vm,
               buildingId: buildingId,
             ),
+            if (home.isAdmin)
+              BoardReportsPanel(
+                key: ValueKey('reports-$buildingId'),
+                vm: vm,
+                buildingId: buildingId,
+              ),
             const SizedBox(height: 24),
             OutlinedButton.icon(
               key: const Key('building-leave'),
@@ -114,7 +121,7 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
   }
 
   Future<void> person(ResidentMember member) async {
-    final promote = await showModalBottomSheet<bool>(
+    final action = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
@@ -154,30 +161,47 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
                 const SizedBox(height: 16),
                 FilledButton(
                   key: const Key('resident-change-role'),
-                  onPressed: () => Navigator.pop(ctx, !member.isAdmin),
+                  onPressed: () =>
+                      Navigator.pop(ctx, member.isAdmin ? 'demote' : 'promote'),
                   child: Text(
                     member.isAdmin
                         ? 'הסרת הרשאת מנהל בניין'
                         : 'מינוי למנהל בניין',
                   ),
                 ),
+                if (!member.mine && !member.isAdmin) ...[
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    key: const Key('resident-remove'),
+                    onPressed: () => Navigator.pop(ctx, 'remove'),
+                    style: TextButton.styleFrom(foregroundColor: glassError),
+                    icon: const Icon(Icons.person_remove_outlined),
+                    label: const Text('הסרה מהבניין'),
+                  ),
+                ],
               ],
             ],
           ),
         );
       },
     );
-    if (promote == null || !mounted) return;
+    if (action == null || !mounted) return;
+    final promote = action == 'promote';
+    final remove = action == 'remove';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(
-          promote
+          remove
+              ? 'להסיר את ${member.name} מהבניין?'
+              : promote
               ? 'למנות את ${member.name} למנהל בניין?'
               : 'להסיר את הרשאת הניהול של ${member.name}?',
         ),
-        content: const Text(
-          'השינוי נוגע לניהול הבניין. תפקיד מנהל הדירה נשמר.',
+        content: Text(
+          remove
+              ? 'הגישה ללוח, לדיירים ולחניון תיסגר, והזמנות חניה עתידיות יבוטלו. כדי לחזור תידרש בקשת הצטרפות חדשה.'
+              : 'השינוי נוגע לניהול הבניין. תפקיד מנהל הדירה נשמר.',
         ),
         actions: [
           TextButton(
@@ -187,13 +211,17 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
           FilledButton(
             key: const Key('resident-confirm-role'),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('אישור השינוי'),
+            child: Text(remove ? 'הסרה מהבניין' : 'אישור השינוי'),
           ),
         ],
       ),
     );
     if (confirmed != true || !mounted) return;
-    await model.changeRole(member, promote);
+    if (remove) {
+      await model.remove(member);
+    } else {
+      await model.changeRole(member, promote);
+    }
   }
 
   @override

@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../app/config.dart';
 import '../../data/auth.dart';
 import '../../app/brand.dart';
 import '../../data/building/building_repository.dart';
@@ -32,9 +34,38 @@ class _BuildingConnectedAppState extends State<BuildingConnectedApp> {
   bool loading = true;
   bool signedIn = false;
   int generation = 0;
+  static const _pendingJoinKey = 'naybor.pending_join_code';
+  String? joinCode = joinCodeFromLink(Uri.base);
+
+  // Google sign-in returns to the bare origin, so the code waits on the device.
+  Future<void> _rememberJoinCode() async {
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      final linked = joinCode;
+      if (linked != null) {
+        await preferences.setString(_pendingJoinKey, linked);
+      } else {
+        final saved = preferences.getString(_pendingJoinKey);
+        if (saved != null && mounted) setState(() => joinCode = saved);
+      }
+    } catch (_) {
+      /* An invitation link is a convenience; the code can still be typed. */
+    }
+  }
+
+  Future<void> _forgetJoinCode() async {
+    joinCode = null;
+    try {
+      await (await SharedPreferences.getInstance()).remove(_pendingJoinKey);
+    } catch (_) {
+      /* Nothing was stored. */
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    unawaited(_rememberJoinCode());
     subscription = client.auth.onAuthStateChange.listen(
       (state) {
         // The explicit refresh below already reads the initial session. Replaying
@@ -80,7 +111,7 @@ class _BuildingConnectedAppState extends State<BuildingConnectedApp> {
       if (!mounted || request != generation) return;
       if (hasSession && pending.isEmpty) {
         next = BuildingViewModel(
-          SupabaseBuildingRepository(client),
+          SupabaseBuildingRepository(client, realtime: widget.client == null),
           readStore:
               widget.readStore ??
               DeviceBoardReadStore(client.auth.currentUser!.id),
@@ -168,6 +199,8 @@ class _BuildingConnectedAppState extends State<BuildingConnectedApp> {
             key: ObjectKey(vm),
             viewModel: vm,
             onSignOut: auth.signOut,
+            initialJoinCode: joinCode,
+            onJoinCodeUsed: () => unawaited(_forgetJoinCode()),
           ),
   );
 }

@@ -64,21 +64,27 @@ class BuildingHome {
     this.isApartmentAdmin = false,
     this.householdName = '',
     this.entrance,
+    this.openReports = 0,
   });
   final String id, name, address, code, apartment;
   final String householdName;
   final String? entrance;
-  final int entrances;
+  final int entrances, openReports;
   final bool isAdmin, isCommittee;
   final bool isApartmentAdmin;
 
   BuildingHome withHouseholdName(String value) =>
       copyWith(householdName: value);
-  BuildingHome copyWith({String? householdName, bool? isAdmin}) => BuildingHome(
+  BuildingHome copyWith({
+    String? householdName,
+    bool? isAdmin,
+    String? code,
+  }) => BuildingHome(
     id: id,
     name: name,
     address: address,
-    code: code,
+    code: code ?? this.code,
+    openReports: openReports,
     apartment: apartment,
     entrances: entrances,
     isAdmin: isAdmin ?? this.isAdmin,
@@ -91,9 +97,56 @@ class BuildingHome {
 
 @immutable
 class BoardReply {
-  const BoardReply(this.author, this.text, {this.mine = false});
-  final String author, text;
-  final bool mine;
+  const BoardReply(
+    this.author,
+    this.text, {
+    this.mine = false,
+    this.id = '',
+    this.edited = false,
+  });
+  final String author, text, id;
+  final bool mine, edited;
+}
+
+/// An unread update for the bell: a decision on a request, a reply, parking.
+@immutable
+class BuildingUpdate {
+  const BuildingUpdate({
+    required this.id,
+    required this.type,
+    required this.buildingId,
+    required this.buildingName,
+    this.text = '',
+    this.startsAt,
+  });
+  final String id, type, buildingId, buildingName, text;
+  final DateTime? startsAt;
+}
+
+/// One reported post or reply, as a building manager reviews it.
+@immutable
+class BoardReport {
+  const BoardReport({
+    required this.postId,
+    required this.text,
+    required this.author,
+    this.replyId,
+    this.apartment = '',
+    this.postText = '',
+    this.count = 1,
+    this.reasons = const [],
+  });
+  final String postId, text, author, apartment, postText;
+  final String? replyId;
+  final int count;
+  final List<String> reasons;
+}
+
+@immutable
+class BoardPage {
+  const BoardPage(this.posts, {this.hasMore = false});
+  final List<BoardPost> posts;
+  final bool hasMore;
 }
 
 @immutable
@@ -109,6 +162,7 @@ class BoardPost {
     this.mine = false,
     this.pinned = false,
     this.closed = false,
+    this.edited = false,
     this.replies = const [],
     this.reactions = const {},
     this.myReactions = const {},
@@ -116,10 +170,27 @@ class BoardPost {
   final String id, buildingId, author, apartment, text;
   final PostKind kind;
   final DateTime createdAt;
-  final bool mine, pinned, closed;
+  final bool mine, pinned, closed, edited;
   final List<BoardReply> replies;
   final Map<String, int> reactions;
   final Set<String> myReactions;
+
+  BoardPost copyWithReplies(Iterable<BoardReply> visible) => BoardPost(
+    id: id,
+    buildingId: buildingId,
+    author: author,
+    apartment: apartment,
+    text: text,
+    kind: kind,
+    createdAt: createdAt,
+    mine: mine,
+    pinned: pinned,
+    closed: closed,
+    edited: edited,
+    replies: List.unmodifiable(visible),
+    reactions: reactions,
+    myReactions: myReactions,
+  );
 
   BoardPost copyWith({
     String? text,
@@ -139,6 +210,7 @@ class BoardPost {
     mine: mine,
     pinned: pinned ?? this.pinned,
     closed: closed ?? this.closed,
+    edited: edited || text != null,
     replies: replies ?? this.replies,
     reactions: reactions ?? this.reactions,
     myReactions: myReactions ?? this.myReactions,
@@ -254,6 +326,29 @@ abstract class BuildingRepository {
   FutureOr<void> close(String id);
   FutureOr<void> pin(String id, BuildingHome home);
   FutureOr<void> remove(String id, BuildingHome home);
+
+  /// Unread updates other than an accepted request.
+  List<BuildingUpdate> get updates;
+  FutureOr<void> readUpdates(List<String> ids);
+  FutureOr<void> reject(String id);
+  FutureOr<void> removeMember(String memberId);
+  FutureOr<void> deleteAccount();
+  FutureOr<String> rotateCode(BuildingHome home);
+  FutureOr<void> editReply(String replyId, String text);
+  FutureOr<void> removeReply(String replyId);
+  FutureOr<void> report(String postId, {String? replyId, String reason = ''});
+  Future<List<BoardReport>> reports(String buildingId);
+  FutureOr<void> resolveReport(BoardReport report, {required bool remove});
+
+  /// Older posts and search, newest first; the live board stays on [posts].
+  Future<BoardPage> boardPage(
+    String buildingId, {
+    DateTime? before,
+    String query = '',
+  });
+
+  /// Emits when something in the building changed on the server.
+  Stream<void> changes(String buildingId);
 }
 
 /// Repository boundary for the new product. This first adapter deliberately
@@ -366,6 +461,193 @@ class LocalBuildingRepository implements BuildingRepository {
     _removeHome(home);
   }
 
+  final _updates = <BuildingUpdate>[];
+  final _reports = <BoardReport>[];
+  final _hiddenPosts = <String>{}, _hiddenReplies = <String>{};
+  @override
+  List<BuildingUpdate> get updates => List.unmodifiable(_updates);
+  @override
+  void readUpdates(List<String> ids) =>
+      _updates.removeWhere((update) => ids.contains(update.id));
+
+  @override
+  void reject(String id) {
+    final index = _applications.indexWhere((a) => a.id == id && !a.approved);
+    if (index < 0) throw StateError('הבקשה כבר השתנתה. נסה לרענן.');
+    _applications.removeAt(index);
+  }
+
+  @override
+  void removeMember(String memberId) {
+    final entry = _directories.entries.firstWhere(
+      (e) => e.value.any((m) => m.id == memberId),
+    );
+    final home = _homes.firstWhere((h) => h.id == entry.key);
+    if (!home.isAdmin) throw StateError('אין הרשאה');
+    final member = entry.value.firstWhere((m) => m.id == memberId);
+    if (member.mine) throw StateError('כדי לעזוב משתמשים ביציאה מהבניין.');
+    if (member.isAdmin) {
+      throw StateError('יש להסיר קודם את הרשאת ניהול הבניין.');
+    }
+    entry.value.remove(member);
+  }
+
+  @override
+  void deleteAccount() {
+    _homes.clear();
+    _applications.clear();
+    _approvalUpdates.clear();
+    _updates.clear();
+    _posts.removeWhere((p) => p.mine);
+    profile = const ResidentProfile();
+  }
+
+  @override
+  String rotateCode(BuildingHome home) {
+    final index = _homes.indexWhere((h) => h.id == home.id);
+    if (index < 0 || !_homes[index].isAdmin) throw StateError('אין הרשאה');
+    final code = 'SH${_id('code').hashCode.abs().toRadixString(36).toUpperCase()}';
+    _homes[index] = _homes[index].copyWith(code: code);
+    return code;
+  }
+
+  BoardPost _postOfReply(String replyId) => _posts.firstWhere(
+    (p) => replyId.isNotEmpty && p.replies.any((r) => r.id == replyId),
+    orElse: () => throw StateError('התגובה לא נמצאה'),
+  );
+
+  @override
+  void editReply(String replyId, String text) {
+    final post = _postOfReply(replyId);
+    if (text.trim().isEmpty || text.trim().length > 1000) {
+      throw ArgumentError('תגובה לא תקינה');
+    }
+    _update(
+      post.id,
+      (p) => p.copyWith(
+        replies: List.unmodifiable([
+          for (final r in p.replies)
+            if (r.id != replyId)
+              r
+            else if (!r.mine)
+              throw StateError('אין הרשאה')
+            else
+              BoardReply(
+                r.author,
+                text.trim(),
+                mine: true,
+                id: r.id,
+                edited: true,
+              ),
+        ]),
+      ),
+    );
+  }
+
+  @override
+  void removeReply(String replyId) {
+    final post = _postOfReply(replyId);
+    final reply = post.replies.firstWhere((r) => r.id == replyId);
+    final home = _homes.where((h) => h.id == post.buildingId).firstOrNull;
+    if (!reply.mine && !(home?.isAdmin ?? false)) throw StateError('אין הרשאה');
+    _update(
+      post.id,
+      (p) => p.copyWith(
+        replies: List.unmodifiable(p.replies.where((r) => r.id != replyId)),
+      ),
+    );
+    _reports.removeWhere((r) => r.replyId == replyId);
+  }
+
+  @override
+  void report(String postId, {String? replyId, String reason = ''}) {
+    final post = _posts.firstWhere((p) => p.id == postId);
+    if (!_homes.any((h) => h.id == post.buildingId)) {
+      throw StateError('אין גישה לבניין');
+    }
+    if (reason.trim().length > 300) throw ArgumentError('הסבר ארוך מדי');
+    final reply = replyId == null
+        ? null
+        : post.replies.firstWhere((r) => r.id == replyId);
+    if (reply?.mine ?? post.mine) {
+      throw StateError('אי אפשר לדווח על תוכן שכתבת.');
+    }
+    if (replyId == null ? !_hiddenPosts.add(postId) : !_hiddenReplies.add(replyId)) {
+      return;
+    }
+    _reports.add(
+      BoardReport(
+        postId: postId,
+        replyId: replyId,
+        text: reply?.text ?? post.text,
+        author: reply?.author ?? post.author,
+        apartment: post.apartment,
+        postText: post.text,
+        reasons: [if (reason.trim().isNotEmpty) reason.trim()],
+      ),
+    );
+  }
+
+  @override
+  Future<List<BoardReport>> reports(String buildingId) async {
+    final home = _homes.where((h) => h.id == buildingId).firstOrNull;
+    if (home == null || !home.isAdmin) throw StateError('אין הרשאה');
+    return List.unmodifiable(
+      _reports.where(
+        (r) => _posts.any((p) => p.id == r.postId && p.buildingId == buildingId),
+      ),
+    );
+  }
+
+  @override
+  void resolveReport(BoardReport report, {required bool remove}) {
+    final post = _posts.where((p) => p.id == report.postId).firstOrNull;
+    final home = _homes.where((h) => h.id == post?.buildingId).firstOrNull;
+    if (post == null || home == null || !home.isAdmin) {
+      throw StateError('אין הרשאה');
+    }
+    if (remove && report.replyId == null) {
+      _posts.remove(post);
+      _reports.removeWhere((r) => r.postId == report.postId);
+    } else if (remove) {
+      _update(
+        post.id,
+        (p) => p.copyWith(
+          replies: List.unmodifiable(
+            p.replies.where((r) => r.id != report.replyId),
+          ),
+        ),
+      );
+    }
+    _reports.removeWhere(
+      (r) => r.postId == report.postId && r.replyId == report.replyId,
+    );
+  }
+
+  @override
+  Future<BoardPage> boardPage(
+    String buildingId, {
+    DateTime? before,
+    String query = '',
+  }) async {
+    const size = 30;
+    final q = query.trim().toLowerCase();
+    final matches = posts(buildingId).where(
+      (p) =>
+          (before == null || p.createdAt.isBefore(before)) &&
+          (q.isEmpty ||
+              p.text.toLowerCase().contains(q) ||
+              p.replies.any((r) => r.text.toLowerCase().contains(q))),
+    ).toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return BoardPage(
+      List.unmodifiable(matches.take(size)),
+      hasMore: matches.length > size,
+    );
+  }
+
+  @override
+  Stream<void> changes(String buildingId) => const Stream<void>.empty();
+
   void _removeHome(BuildingHome home) {
     _homes.remove(home);
     _applications.removeWhere((a) => a.building.id == home.id);
@@ -465,7 +747,15 @@ class LocalBuildingRepository implements BuildingRepository {
   @override
   List<BoardPost> posts(String buildingId) {
     if (!_homes.any((b) => b.id == buildingId)) return const [];
-    final result = _posts.where((p) => p.buildingId == buildingId).toList();
+    final result = [
+      for (final p in _posts)
+        if (p.buildingId == buildingId && !_hiddenPosts.contains(p.id))
+          _hiddenReplies.isEmpty
+              ? p
+              : p.copyWithReplies(
+                  p.replies.where((r) => !_hiddenReplies.contains(r.id)),
+                ),
+    ];
     result.sort(
       (a, b) => a.pinned != b.pinned
           ? (a.pinned ? -1 : 1)
@@ -661,7 +951,7 @@ class LocalBuildingRepository implements BuildingRepository {
       return p.copyWith(
         replies: List.unmodifiable([
           ...p.replies,
-          BoardReply('אני', text.trim(), mine: true),
+          BoardReply('אני', text.trim(), mine: true, id: _id('reply')),
         ]),
       );
     });
@@ -730,8 +1020,30 @@ class BuildingViewModel extends ChangeNotifier {
   List<JoinApplication> get inbox =>
       repository.applications.where((a) => !a.mine && !a.approved).toList();
   List<ApprovalUpdate> get approvalUpdates => repository.approvalUpdates;
+  List<BuildingUpdate> get updates => repository.updates;
+  StreamSubscription<void>? _changes;
+  String? _changesFor;
+  Timer? _changeDebounce;
+
+  // Follow the active building's change signal; polling stays as the fallback.
+  void _watch() {
+    if (_disposed || _changesFor == _activeId) return;
+    _changesFor = _activeId;
+    unawaited(_changes?.cancel());
+    _changes = null;
+    final id = _activeId;
+    if (id == null) return;
+    _changes = repository.changes(id).listen((_) {
+      _changeDebounce?.cancel();
+      _changeDebounce = Timer(const Duration(milliseconds: 400), () {
+        unawaited(synchronize().catchError((Object _) {}));
+      });
+    }, onError: (Object _) {});
+  }
+
   int get notificationCount =>
       approvalUpdates.length +
+      updates.length +
       repository.applications.where((a) => !a.mine && a.needsMyApproval).length;
   bool get needsFastSync => repository.applications.any(
     (a) => !a.approved && (a.mine || a.needsMyApproval),
@@ -757,6 +1069,7 @@ class BuildingViewModel extends ChangeNotifier {
       if (!homes.any((h) => h.id == _activeId)) {
         _activeId = homes.firstOrNull?.id;
       }
+      _watch();
       _notify();
     } finally {
       _synchronizing = false;
@@ -798,6 +1111,7 @@ class BuildingViewModel extends ChangeNotifier {
       }
     } finally {
       _pendingOperations--;
+      _watch();
       _notify();
     }
   }
@@ -834,6 +1148,8 @@ class BuildingViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _changeDebounce?.cancel();
+    unawaited(_changes?.cancel());
     super.dispose();
   }
 }

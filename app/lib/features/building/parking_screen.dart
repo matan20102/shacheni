@@ -64,7 +64,33 @@ class _ParkingScreenState extends State<ParkingScreen>
 
   void _message(String text) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
-  Future<void> _editor([ParkingSpace? space]) async {
+  Future<void> _remove(ParkingSpace space) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('להסיר את חניה ${space.label}?'),
+        content: const Text(
+          'זמנים פנויים שפורסמו לחניה יבוטלו. ההיסטוריה נשמרת, ואפשר להוסיף את החניה שוב בהמשך.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('חזרה'),
+          ),
+          FilledButton(
+            key: const Key('parking-remove-confirm'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('הסרת החניה'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final ok = await model.run(() => model.repository.removeSpace(space.id));
+    if (mounted) _message(ok ? 'החניה הוסרה' : model.error ?? 'הפעולה נכשלה');
+  }
+
+  Future<void> _editor([ParkingSpace? space, bool details = false]) async {
     final saved = await showModalBottomSheet<bool>(
       context: context,
       useSafeArea: true,
@@ -76,12 +102,19 @@ class _ParkingScreenState extends State<ParkingScreen>
           model: model,
           apartment: widget.apartment,
           space: space,
+          details: details,
         ),
       ),
     );
     if (saved == true && mounted) {
       setState(() => section = 1);
-      _message(space == null ? 'החניה נוספה לדירה' : 'הזמינות פורסמה לשכנים');
+      _message(
+        space == null
+            ? 'החניה נוספה לדירה'
+            : details
+            ? 'פרטי החניה עודכנו'
+            : 'הזמינות פורסמה לשכנים',
+      );
     }
   }
 
@@ -150,7 +183,8 @@ class _ParkingScreenState extends State<ParkingScreen>
             (o) => switch (section) {
               0 => o.canBook,
               1 => o.ownSpace,
-              _ => o.myBooking,
+              2 => o.myBooking,
+              _ => false,
             },
           )
           .toList();
@@ -187,12 +221,17 @@ class _ParkingScreenState extends State<ParkingScreen>
               spacing: 8,
               runSpacing: 4,
               children: [
-                for (var i = 0; i < 3; i++)
+                for (var i = 0; i < 4; i++)
                   ChoiceChip(
                     key: ValueKey('parking-section-$i'),
                     selected: section == i,
-                    onSelected: (_) => setState(() => section = i),
-                    label: Text(['פנויות', 'החניות שלנו', 'ההזמנות שלי'][i]),
+                    onSelected: (_) {
+                      setState(() => section = i);
+                      if (i == 3) unawaited(model.loadHistory());
+                    },
+                    label: Text(
+                      ['פנויות', 'החניות שלנו', 'ההזמנות שלי', 'היסטוריה'][i],
+                    ),
                   ),
               ],
             ),
@@ -238,12 +277,63 @@ class _ParkingScreenState extends State<ParkingScreen>
                           icon: const Icon(Icons.add_rounded),
                           label: const Text('שיתוף זמן פנוי'),
                         ),
+                        Wrap(
+                          spacing: 4,
+                          children: [
+                            TextButton(
+                              key: ValueKey('parking-edit-${space.id}'),
+                              onPressed: model.saving
+                                  ? null
+                                  : () => _editor(space, true),
+                              child: const Text('עריכת פרטים'),
+                            ),
+                            TextButton(
+                              key: ValueKey('parking-remove-${space.id}'),
+                              onPressed: model.saving
+                                  ? null
+                                  : () => _remove(space),
+                              child: const Text('הסרה'),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                 ),
               if (offers.isNotEmpty) const SectionTitle('הזמנים ששיתפנו'),
             ],
+            if (section == 3)
+              for (final past in model.history)
+                Padding(
+                  key: ValueKey('parking-history-${past.id}'),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: GlassPanel(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _spaceTitle(
+                          past.space,
+                          past.ownSpace
+                              ? 'החניה שלנו'
+                              : 'של דירה ${past.apartment}',
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'מ־${parkingTime(past.startsAt)} עד ${parkingTime(past.endsAt)}',
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _historyStatus(past),
+                          style: const TextStyle(
+                            color: glassMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             for (final offer in offers)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -252,6 +342,7 @@ class _ParkingScreenState extends State<ParkingScreen>
             if (!model.loading &&
                 model.error == null &&
                 offers.isEmpty &&
+                (section != 3 || model.history.isEmpty) &&
                 (section != 1 || model.snapshot.spaces.isEmpty))
               GlassPanel(
                 padding: const EdgeInsets.all(22),
@@ -269,6 +360,7 @@ class _ParkingScreenState extends State<ParkingScreen>
                         'עדיין אין חניות פנויות',
                         'החניות של הבית, במקום אחד',
                         'עוד אין לך הזמנות',
+                        'עוד אין היסטוריה',
                       ][section],
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
@@ -278,6 +370,7 @@ class _ParkingScreenState extends State<ParkingScreen>
                         'כששכן ישתף חניה, אפשר יהיה להזמין אותה כאן.',
                         'מוסיפים חניה פעם אחת. כל בני הבית יוכלו לשתף אותה כשהיא פנויה.',
                         'חניה שהזמנת תופיע כאן עם השעות והמיקום.',
+                        'שיתופים והזמנות שהסתיימו או בוטלו יופיעו כאן.',
                       ][section],
                       style: const TextStyle(color: glassMuted),
                     ),
@@ -289,6 +382,13 @@ class _ParkingScreenState extends State<ParkingScreen>
       );
     },
   );
+  String _historyStatus(ParkingOffer o) {
+    final who = o.bookerName.isEmpty ? '' : ' · ${o.bookerName}';
+    if (o.bookingStatus == 'confirmed') return 'הוזמנה$who';
+    if (o.bookingStatus == 'cancelled') return 'ההזמנה בוטלה$who';
+    return o.status == 'cancelled' ? 'השיתוף בוטל' : 'לא הוזמנה';
+  }
+
   Widget _spaceTitle(ParkingSpace space, String subtitle) => Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -397,19 +497,45 @@ class ParkingEditor extends StatefulWidget {
     required this.model,
     required this.apartment,
     this.space,
+    this.details = false,
   });
   final ParkingViewModel model;
   final String apartment;
   final ParkingSpace? space;
+
+  /// Edits the space itself instead of publishing a window for it.
+  final bool details;
   @override
   State<ParkingEditor> createState() => _ParkingEditorState();
 }
 
 class _ParkingEditorState extends State<ParkingEditor> {
   final form = GlobalKey<FormState>();
-  final label = TextEditingController(),
-      level = TextEditingController(),
-      notes = TextEditingController();
+  late final label = TextEditingController(text: widget.space?.label ?? ''),
+      level = TextEditingController(text: widget.space?.level ?? ''),
+      notes = TextEditingController(text: widget.space?.notes ?? '');
+  bool get describing => widget.space == null || widget.details;
+
+  /// 0 once, 1 every day for a week, 2 Sunday to Thursday for two weeks.
+  int repeat = 0;
+
+  // Calendar days, not 24-hour steps, so a clock change keeps the same hour.
+  List<ParkingWindow> _windows() {
+    DateTime shift(DateTime t, int days) =>
+        DateTime(t.year, t.month, t.day + days, t.hour, t.minute);
+    return [
+      for (var i = 0; i < const [1, 7, 14][repeat]; i++)
+        if (repeat != 2 ||
+            const {
+              DateTime.sunday,
+              DateTime.monday,
+              DateTime.tuesday,
+              DateTime.wednesday,
+              DateTime.thursday,
+            }.contains(shift(start, i).weekday))
+          (start: shift(start, i), end: shift(end, i)),
+    ];
+  }
   late DateTime start = _initialStart();
   DateTime _initialStart() {
     final now = DateTime.now();
@@ -479,7 +605,11 @@ class _ParkingEditorState extends State<ParkingEditor> {
 
   Future<void> _save() async {
     if (saving || !form.currentState!.validate()) return;
-    if (widget.space != null &&
+    if (!describing && repeat != 0 && end.difference(start).inHours >= 24) {
+      setState(() => error = 'זמינות חוזרת מתאימה לטווח קצר מיממה.');
+      return;
+    }
+    if (!describing &&
         (!end.isAfter(start) ||
             !end.isAfter(DateTime.now()) ||
             start.isBefore(
@@ -502,7 +632,16 @@ class _ParkingEditorState extends State<ParkingEditor> {
               level.text,
               notes.text,
             )
-          : widget.model.repository.publish(widget.space!.id, start, end),
+          : widget.details
+          ? widget.model.repository.updateSpace(
+              widget.space!.id,
+              label.text,
+              level.text,
+              notes.text,
+            )
+          : repeat == 0
+          ? widget.model.repository.publish(widget.space!.id, start, end)
+          : widget.model.repository.publishSeries(widget.space!.id, _windows()),
     );
     if (!mounted) return;
     if (ok) {
@@ -528,6 +667,8 @@ class _ParkingEditorState extends State<ParkingEditor> {
             Text(
               widget.space == null
                   ? 'החניה של הבית'
+                  : widget.details
+                  ? 'פרטי חניה ${widget.space!.label}'
                   : 'משתפים את חניה ${widget.space!.label}',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
@@ -539,7 +680,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
               style: const TextStyle(color: glassMuted),
             ),
             const SizedBox(height: 22),
-            if (widget.space == null) ...[
+            if (describing) ...[
               TextFormField(
                 key: const Key('parking-label'),
                 controller: label,
@@ -591,6 +732,24 @@ class _ParkingEditorState extends State<ParkingEditor> {
                 label: Text('עד ${parkingTime(end)}'),
               ),
               const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (var i = 0; i < 3; i++)
+                    ChoiceChip(
+                      key: ValueKey('parking-repeat-$i'),
+                      selected: repeat == i,
+                      onSelected: saving
+                          ? null
+                          : (_) => setState(() => repeat = i),
+                      label: Text(
+                        ['פעם אחת', 'כל יום, שבוע', 'א׳–ה׳, שבועיים'][i],
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
               const SoftTag(
                 'שיתוף בחינם · הזמנה לכל הטווח',
                 icon: Icons.favorite_border_rounded,
@@ -610,6 +769,8 @@ class _ParkingEditorState extends State<ParkingEditor> {
                     ? 'שומרים…'
                     : widget.space == null
                     ? 'הוספת החניה'
+                    : widget.details
+                    ? 'שמירת הפרטים'
                     : 'פרסום לשכנים',
               ),
             ),
@@ -671,4 +832,15 @@ class _ParkingPreviewRepository implements ParkingRepository {
   Future<void> book(String id) async => throw StateError('תצוגת עיצוב בלבד');
   @override
   Future<void> cancel(String id) async => throw StateError('תצוגת עיצוב בלבד');
+  @override
+  Future<void> updateSpace(String id, String l, String level, String n) async =>
+      throw StateError('תצוגת עיצוב בלבד');
+  @override
+  Future<void> removeSpace(String id) async =>
+      throw StateError('תצוגת עיצוב בלבד');
+  @override
+  Future<void> publishSeries(String id, List<ParkingWindow> windows) async =>
+      throw StateError('תצוגת עיצוב בלבד');
+  @override
+  Future<List<ParkingOffer>> history(String buildingId) async => const [];
 }

@@ -6,6 +6,7 @@ class ParkingMemoryStore {
   final _spaces =
       <String, ({String building, String apartment, ParkingSpace space})>{};
   final _offers = <String, _MemoryOffer>{};
+  final _removed = <String>{};
 }
 
 class _MemoryOffer {
@@ -30,7 +31,10 @@ class LocalParkingRepository implements ParkingRepository {
   @override
   Future<ParkingSnapshot> load(String buildingId) async {
     final a = _apartment(buildingId);
-    final spaces = store._spaces.values.where((s) => s.building == buildingId);
+    final spaces = store._spaces.entries
+        .where((e) => !store._removed.contains(e.key))
+        .map((e) => e.value)
+        .where((s) => s.building == buildingId);
     final offers = <ParkingOffer>[];
     for (final o in store._offers.values) {
       final s = store._spaces[o.spaceId]!;
@@ -79,13 +83,7 @@ class LocalParkingRepository implements ParkingRepository {
         notes.length > 200) {
       throw StateError('יש לבדוק את פרטי החניה');
     }
-    if (store._spaces.values.any(
-      (s) =>
-          s.building == buildingId &&
-          s.space.label.toLowerCase() == label.trim().toLowerCase(),
-    )) {
-      throw StateError('PARKING_LABEL_TAKEN');
-    }
+    if (_labelTaken(buildingId, label)) throw StateError('PARKING_LABEL_TAKEN');
     final id = 'space-${++store.next}';
     store._spaces[id] = (
       building: buildingId,
@@ -99,10 +97,124 @@ class LocalParkingRepository implements ParkingRepository {
     );
   }
 
+  bool _labelTaken(String buildingId, String label, {String? except}) =>
+      store._spaces.entries.any(
+        (e) =>
+            e.key != except &&
+            !store._removed.contains(e.key) &&
+            e.value.building == buildingId &&
+            e.value.space.label.toLowerCase() == label.trim().toLowerCase(),
+      );
+
+  ({String building, String apartment, ParkingSpace space}) _owned(
+    String spaceId,
+  ) {
+    final s = store._spaces[spaceId];
+    if (s == null ||
+        store._removed.contains(spaceId) ||
+        _apartment(s.building) != s.apartment) {
+      throw StateError('אין הרשאה');
+    }
+    return s;
+  }
+
+  @override
+  Future<void> updateSpace(
+    String spaceId,
+    String label,
+    String level,
+    String notes,
+  ) async {
+    final s = _owned(spaceId);
+    if (label.trim().isEmpty ||
+        label.trim().length > 20 ||
+        level.length > 20 ||
+        notes.length > 200) {
+      throw StateError('יש לבדוק את פרטי החניה');
+    }
+    if (_labelTaken(s.building, label, except: spaceId)) {
+      throw StateError('PARKING_LABEL_TAKEN');
+    }
+    store._spaces[spaceId] = (
+      building: s.building,
+      apartment: s.apartment,
+      space: ParkingSpace(
+        id: spaceId,
+        label: label.trim(),
+        level: level.trim(),
+        notes: notes.trim(),
+      ),
+    );
+  }
+
+  @override
+  Future<void> removeSpace(String spaceId) async {
+    _owned(spaceId);
+    final now = DateTime.now();
+    final open = store._offers.values.where(
+      (o) => o.spaceId == spaceId && o.end.isAfter(now),
+    );
+    if (open.any((o) => o.status == 'booked')) {
+      throw StateError('PARKING_HAS_BOOKING');
+    }
+    for (final o in open) {
+      if (o.status == 'available') o.status = 'cancelled';
+    }
+    store._removed.add(spaceId);
+  }
+
+  @override
+  Future<void> publishSeries(
+    String spaceId,
+    List<ParkingWindow> windows,
+  ) async {
+    if (windows.isEmpty || windows.length > 31) {
+      throw StateError('יש לבדוק את הפרטים שהזנת.');
+    }
+    final before = Map.of(store._offers);
+    try {
+      for (final w in windows) {
+        await publish(spaceId, w.start, w.end);
+      }
+    } catch (_) {
+      store._offers
+        ..clear()
+        ..addAll(before);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<ParkingOffer>> history(String buildingId) async {
+    final a = _apartment(buildingId);
+    final now = DateTime.now();
+    final rows = <ParkingOffer>[];
+    for (final o in store._offers.values) {
+      final s = store._spaces[o.spaceId]!;
+      final own = s.apartment == a, mine = o.booker == userId;
+      if (s.building != buildingId || !(own || mine)) continue;
+      if (o.end.isAfter(now) && o.status != 'cancelled') continue;
+      rows.add(
+        ParkingOffer(
+          id: o.id,
+          space: s.space,
+          apartment: s.apartment,
+          startsAt: o.start,
+          endsAt: o.end,
+          status: o.status,
+          ownSpace: own,
+          bookingStatus: o.bookingStatus,
+          bookerName: o.name,
+        ),
+      );
+    }
+    rows.sort((x, y) => y.startsAt.compareTo(x.startsAt));
+    return List.unmodifiable(rows);
+  }
+
   @override
   Future<void> publish(String spaceId, DateTime start, DateTime end) async {
-    final s = store._spaces[spaceId]!;
-    if (_apartment(s.building) != s.apartment) throw StateError('אין הרשאה');
+    _owned(spaceId);
     final now = DateTime.now();
     if (start.isBefore(now.subtract(const Duration(minutes: 5))) ||
         start.isAfter(now.add(const Duration(days: 90))) ||

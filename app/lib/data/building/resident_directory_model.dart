@@ -45,6 +45,23 @@ class ResidentDirectoryModel extends ChangeNotifier {
     }
   }
 
+  Future<void> remove(ResidentMember member) async {
+    if (saving || _disposed) return;
+    saving = true;
+    error = null;
+    _notify();
+    try {
+      await building.run(() => building.repository.removeMember(member.id));
+      if (_disposed) return;
+      await load();
+    } catch (e) {
+      error = e;
+    } finally {
+      saving = false;
+      _notify();
+    }
+  }
+
   @override
   void dispose() {
     _disposed = true;
