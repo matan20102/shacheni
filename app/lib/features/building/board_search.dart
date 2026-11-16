@@ -85,7 +85,7 @@ class _BoardSearchState extends State<BoardSearch> {
   }
 
   String _date(DateTime time) =>
-      '⁦${time.day}.${time.month}.${time.year % 100}⁩';
+      '\u2066${time.day}.${time.month}.${time.year % 100}\u2069';
 
   @override
   Widget build(BuildContext context) => SizedBox(
