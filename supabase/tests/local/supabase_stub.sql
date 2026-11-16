@@ -28,8 +28,21 @@ create table auth.users (
   email text,
   email_confirmed_at timestamptz,
   raw_user_meta_data jsonb not null default '{}',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  deleted_at timestamptz
 );
+-- Only the columns account deletion touches.
+create table auth.identities (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  provider text not null default 'google'
+);
+create table auth.sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade
+);
+-- Supabase ships this publication empty; migrations add tables to it.
+create publication supabase_realtime;
 
 -- Same definition as Supabase: the JWT `sub` set per request by PostgREST.
 create function auth.uid() returns uuid language sql stable as $$
