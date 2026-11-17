@@ -57,10 +57,16 @@ select t.login(4);
 select t.ok('update survives a foreign read',jsonb_array_length(ba_state()->'notifications')=1);
 select ba_read_notifications(array[t.get('n4')::uuid]);
 select t.ok('read update disappears',jsonb_array_length(ba_state()->'notifications')=0);
-select t.lives('rejected applicant may apply again',$$select t.put('m4',ba_apply_home(t.get('code'),'4')::text)$$);
+select t.throws('rejected applicant waits a day',$$select ba_apply_home(t.get('code'),'4')$$,'TRY_LATER');
+select t.as_admin();
+update community_member set updated_at=now()-interval '25 hours' where id=t.get('m4')::uuid;
+select t.login(4);
+select t.lives('rejected applicant may apply again after a day',$$select t.put('m4',ba_apply_home(t.get('code'),'4')::text)$$);
 -- The apartment manager may decline a housemate.
 select t.login(2);
 select t.lives('apartment manager rejects a housemate request',$$select ba_reject(t.get('m3')::uuid)$$);
+select t.as_admin();
+update community_member set updated_at=now()-interval '25 hours' where id=t.get('m3')::uuid;
 select t.login(3); select t.put('m3',ba_apply_home(t.get('code'),'2')::text);
 select t.login(1); select ba_approve(t.get('m3')::uuid,'building'); select ba_approve(t.get('m4')::uuid,'building');
 select t.login(2); select ba_approve(t.get('m3')::uuid,'apartment');
@@ -245,6 +251,7 @@ select t.ok('removed resident loses the building',jsonb_array_length(ba_state()-
 select t.ok('removed resident is told',ba_state()->'notifications'->0->>'type'='community.member_removed');
 select t.ok('older building updates no longer show',jsonb_array_length(ba_state()->'notifications')=1);
 select t.throws('removed resident has no board access',$$select ba_board(t.get('b')::uuid)$$,'ACCESS_DENIED');
+select t.throws('removed resident waits a day to ask again',$$select ba_apply_home(t.get('code2'),'2')$$,'TRY_LATER');
 
 -- Account deletion.
 select t.login(1);
