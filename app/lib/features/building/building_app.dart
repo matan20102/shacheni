@@ -18,6 +18,7 @@ import 'account_widgets.dart';
 import 'resident_directory.dart';
 import 'platform_console.dart';
 import 'parking_screen.dart';
+import 'post_images.dart';
 
 String _apartmentLabel(BuildingHome home) => 'דירה ${home.apartment}';
 
@@ -796,6 +797,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
                   ),
                 ),
               ),
+              PostPhotos(paths: post.images, load: vm.repository.postImage),
               if (post.closed)
                 Text(
                   post.kind == PostKind.request ? 'נפתר' : 'לא רלוונטי',
@@ -1546,11 +1548,13 @@ class _BuildingExperienceState extends State<BuildingExperience>
     _sheet(
       (ctx) => _PostForm(
         post: post,
-        onSave: (text, kind) async {
+        onSave: (text, kind, images) async {
           await vm.run(
-            () => post == null
+            () => post != null
+                ? vm.repository.edit(post.id, text)
+                : images.isEmpty
                 ? vm.repository.publish(home, text, kind)
-                : vm.repository.edit(post.id, text),
+                : vm.repository.publishWithImages(home, text, kind, images),
           );
           if (!ctx.mounted || !mounted) return;
           Navigator.pop(ctx);
@@ -2334,7 +2338,7 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
 class _PostForm extends StatefulWidget {
   const _PostForm({this.post, required this.onSave});
   final BoardPost? post;
-  final Future<void> Function(String, PostKind) onSave;
+  final Future<void> Function(String, PostKind, List<PostImage>) onSave;
   @override
   State<_PostForm> createState() => _PostFormState();
 }
@@ -2342,6 +2346,7 @@ class _PostForm extends StatefulWidget {
 class _PostFormState extends State<_PostForm> with _AsyncForm<_PostForm> {
   late final text = TextEditingController(text: widget.post?.text ?? '');
   late PostKind kind = widget.post?.kind ?? PostKind.notice;
+  List<PostImage> images = const [];
   final form = GlobalKey<FormState>();
   @override
   void dispose() {
@@ -2397,6 +2402,14 @@ class _PostFormState extends State<_PostForm> with _AsyncForm<_PostForm> {
                 ? 'יש לכתוב משהו לפני הפרסום'
                 : null,
           ),
+          if (widget.post == null) ...[
+            const SizedBox(height: 8),
+            PostImagePicker(
+              images: images,
+              enabled: !submitting,
+              onChanged: (next) => setState(() => images = next),
+            ),
+          ],
           const SizedBox(height: 20),
           if (submitError != null)
             Text(submitError!, style: const TextStyle(color: glassError)),
@@ -2408,7 +2421,9 @@ class _PostFormState extends State<_PostForm> with _AsyncForm<_PostForm> {
                   ? null
                   : () {
                       if (form.currentState!.validate()) {
-                        submit(() => widget.onSave(text.text.trim(), kind));
+                        submit(
+                          () => widget.onSave(text.text.trim(), kind, images),
+                        );
                       }
                     },
               child: Text(widget.post == null ? 'פרסום בלוח' : 'שמירת השינוי'),
@@ -2557,6 +2572,10 @@ class _ConversationState extends State<_Conversation>
                               ),
                               const SizedBox(height: 8),
                               Text(post.text),
+                              PostPhotos(
+                                paths: post.images,
+                                load: widget.vm.repository.postImage,
+                              ),
                             ],
                           ),
                         ),
