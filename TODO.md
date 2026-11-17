@@ -71,7 +71,7 @@ cd ../supabase/tests/local/pglite && npm ci && npm test
 - [x] **CI ב־GitHub Actions:** (`.github/workflows/ci.yml`, ענף `liav/ci-and-invite-qr`) `flutter analyze`, `flutter test` ובדיקות ה־SQL על כל PR.
 - [ ] **ניטור קריסות** (Sentry או Crashlytics).
 - [ ] **פרויקט Supabase נפרד ל־staging.** היום בדיקות שרת רצות מול הייצור בטרנזקציה שמבוטלת.
-- [ ] **לפצל את `building_app.dart`** (מעל 2,500 שורות) לקובץ לכל אזור: בית, לוח, הצטרפות, ניהול.
+- [x] **לפצל את `building_app.dart`** (ענף `liav/split-and-images`: הקובץ ירד ל־~610 שורות; הלשוניות והתפריטים עברו ל־`building_home_tab.dart`, `building_board_tab.dart`, `building_join.dart`, `building_menus.dart` כקובצי `part` עם הרחבות (extensions) של ה־State, בלי שינוי בהתנהגות.)
 - [ ] **להעביר לארכיון** את מסמכי ה־PRD וצילומי המסך של האב־טיפוס הישן.
 - [ ] **אזור השרת:** הפרויקט ב־Tokyo. לשקול מעבר לאירופה לפני שיש הרבה משתמשים.
 
