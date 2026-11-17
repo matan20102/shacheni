@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>נייבור פותחת את התמונות כדי שתוכל לצרף תמונה לפרסום בלוח הבניין.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>נייבור משתמשת במצלמה כדי שתוכל לצלם תמונה לפרסום בלוח הבניין.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

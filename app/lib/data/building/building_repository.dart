@@ -10,6 +10,24 @@ import 'platform_repository.dart';
 
 enum PostKind { notice, request }
 
+/// A photo picked for a new post, already scaled down on the device.
+@immutable
+class PostImage {
+  const PostImage(this.bytes, this.mimeType);
+  final Uint8List bytes;
+  final String mimeType;
+
+  /// The server keeps at most this many photos per post.
+  static const maxPerPost = 4;
+  static const mimeTypes = {'image/jpeg', 'image/png', 'image/webp'};
+
+  String get extension => switch (mimeType) {
+    'image/png' => 'png',
+    'image/webp' => 'webp',
+    _ => 'jpg',
+  };
+}
+
 @immutable
 class ResidentMember {
   const ResidentMember({
@@ -167,6 +185,7 @@ class BoardPost {
     this.replies = const [],
     this.reactions = const {},
     this.myReactions = const {},
+    this.images = const [],
   });
   final String id, buildingId, author, apartment, text;
   final PostKind kind;
@@ -175,6 +194,9 @@ class BoardPost {
   final List<BoardReply> replies;
   final Map<String, int> reactions;
   final Set<String> myReactions;
+
+  /// Storage paths of the post's photos, in order.
+  final List<String> images;
 
   BoardPost copyWithReplies(Iterable<BoardReply> visible) => BoardPost(
     id: id,
@@ -191,6 +213,7 @@ class BoardPost {
     replies: List.unmodifiable(visible),
     reactions: reactions,
     myReactions: myReactions,
+    images: images,
   );
 
   BoardPost copyWith({
@@ -215,6 +238,7 @@ class BoardPost {
     replies: replies ?? this.replies,
     reactions: reactions ?? this.reactions,
     myReactions: myReactions ?? this.myReactions,
+    images: images,
   );
 }
 
@@ -321,6 +345,17 @@ abstract class BuildingRepository {
   FutureOr<void> approve(String id, {required bool byBuildingAdmin});
   FutureOr<void> withdraw(String id);
   FutureOr<void> publish(BuildingHome home, String text, PostKind kind);
+
+  /// Publishes a post with photos; [publish] stays for text-only posts.
+  Future<void> publishWithImages(
+    BuildingHome home,
+    String text,
+    PostKind kind,
+    List<PostImage> images,
+  );
+
+  /// The bytes of one post photo, by its path in [BoardPost.images].
+  Future<Uint8List> postImage(String path);
   FutureOr<void> reply(String id, String text);
   FutureOr<void> react(String id, String emoji);
   FutureOr<void> edit(String id, String text);
@@ -927,7 +962,45 @@ class LocalBuildingRepository implements BuildingRepository {
   void withdraw(String id) =>
       _applications.removeWhere((a) => a.id == id && !a.approved);
   @override
-  void publish(BuildingHome home, String text, PostKind kind) {
+  void publish(BuildingHome home, String text, PostKind kind) =>
+      _publish(home, text, kind, const []);
+
+  @override
+  Future<void> publishWithImages(
+    BuildingHome home,
+    String text,
+    PostKind kind,
+    List<PostImage> images,
+  ) async {
+    if (images.length > PostImage.maxPerPost ||
+        images.any((i) => !PostImage.mimeTypes.contains(i.mimeType))) {
+      throw ArgumentError('תמונות לא תקינות');
+    }
+    final paths = List.generate(
+      images.length,
+      (_) => '${home.id}/local/${_id('image')}',
+    );
+    _publish(home, text, kind, paths);
+    for (var i = 0; i < images.length; i++) {
+      _images[paths[i]] = images[i].bytes;
+    }
+  }
+
+  @override
+  Future<Uint8List> postImage(String path) async {
+    final bytes = _images[path];
+    if (bytes == null) throw StateError('התמונה לא נמצאה');
+    return bytes;
+  }
+
+  final Map<String, Uint8List> _images = {};
+
+  void _publish(
+    BuildingHome home,
+    String text,
+    PostKind kind,
+    List<String> images,
+  ) {
     if (!_homes.any((b) => b.id == home.id)) {
       throw StateError('נדרש אישור הצטרפות');
     }
@@ -944,6 +1017,7 @@ class LocalBuildingRepository implements BuildingRepository {
         kind: kind,
         createdAt: DateTime.now(),
         mine: true,
+        images: List.unmodifiable(images),
       ),
     );
   }

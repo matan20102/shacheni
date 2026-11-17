@@ -18,6 +18,7 @@ import 'account_widgets.dart';
 import 'resident_directory.dart';
 import 'platform_console.dart';
 import 'parking_screen.dart';
+import 'post_images.dart';
 
 part 'building_home_tab.dart';
 part 'building_board_tab.dart';
