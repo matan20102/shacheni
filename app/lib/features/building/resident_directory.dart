@@ -5,6 +5,7 @@ import '../../data/building/resident_directory_model.dart';
 import '../../data/building/supabase_building_repository.dart';
 import 'board_reports.dart';
 import 'glass_widgets.dart';
+import 'invite_qr.dart';
 
 class BuildingManagementSheet extends StatelessWidget {
   const BuildingManagementSheet({
@@ -59,6 +60,14 @@ class BuildingManagementSheet extends StatelessWidget {
                 ],
               ),
             ),
+            if (home.isAdmin) ...[
+              const SizedBox(height: 16),
+              InviteQrPanel(
+                key: ValueKey('invite-qr-$buildingId'),
+                name: home.name,
+                code: home.code,
+              ),
+            ],
             const SizedBox(height: 24),
             ResidentDirectory(
               key: ValueKey(buildingId),
