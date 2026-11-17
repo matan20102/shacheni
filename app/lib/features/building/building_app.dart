@@ -672,11 +672,40 @@ class _BuildingExperienceState extends State<BuildingExperience>
                   posts: posts.reversed.toList(),
                   readStore: vm.readStore,
                   itemBuilder: _postCard,
+                  leading: vm.canLoadOlder ? _loadOlderButton() : null,
                 ),
         ),
       ],
     );
   }
+
+  Widget _loadOlderButton() => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Center(
+      child: vm.loadingOlder
+          ? const Padding(
+              padding: EdgeInsets.all(10),
+              child: SizedBox.square(
+                dimension: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+            )
+          : TextButton.icon(
+              key: const Key('board-load-older'),
+              onPressed: () async {
+                try {
+                  await vm.loadOlder();
+                } catch (_) {
+                  if (mounted) {
+                    _message('לא הצלחנו לטעון פרסומים קודמים. נסו שוב.');
+                  }
+                }
+              },
+              icon: const Icon(Icons.history_rounded, size: 18),
+              label: const Text('טעינת פרסומים קודמים'),
+            ),
+    ),
+  );
 
   Widget _pinnedBanner(List<BoardPost> pinned) => Padding(
     padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),

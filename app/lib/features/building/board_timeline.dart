@@ -15,11 +15,15 @@ class BoardTimeline extends StatefulWidget {
     required this.posts,
     required this.readStore,
     required this.itemBuilder,
+    this.leading,
   });
   final String buildingId;
   final List<BoardPost> posts;
   final BoardReadStore readStore;
   final Widget Function(BoardPost) itemBuilder;
+
+  /// Shown above the oldest post, e.g. "load older posts".
+  final Widget? leading;
   @override
   State<BoardTimeline> createState() => BoardTimelineState();
 }
@@ -80,7 +84,38 @@ class BoardTimelineState extends State<BoardTimeline>
       positioning = true;
       unreadPostId = null;
       unawaited(_load());
+      return;
     }
+    _keepAnchorOnPrepend(oldWidget.posts);
+  }
+
+  // Older posts arrive above the current top: keep the post the resident was
+  // looking at in place instead of letting the list jump.
+  void _keepAnchorOnPrepend(List<BoardPost> before) {
+    if (!ready || positioning || before.isEmpty || widget.posts.isEmpty) {
+      return;
+    }
+    final visible = positions.itemPositions.value
+        .where((p) => p.index < before.length && p.itemTrailingEdge > 0)
+        .toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    // The topmost visible post that moved down. An old pinned post can stay
+    // first while the loaded posts arrive right below it.
+    for (final top in visible) {
+      final id = before[top.index].id;
+      final index = widget.posts.indexWhere((p) => p.id == id);
+      if (index <= top.index) continue;
+      _jumpAfterLayout(index, top.itemLeadingEdge);
+      return;
+    }
+  }
+
+  void _jumpAfterLayout(int index, double alignment) {
+    final request = generation;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_valid(request)) return;
+      controller.jumpTo(index: index, alignment: alignment);
+    });
   }
 
   // The indexed list publishes item positions after its layout callback.
@@ -226,6 +261,7 @@ class BoardTimelineState extends State<BoardTimeline>
                   padding: const EdgeInsets.fromLTRB(14, 2, 14, 12),
                   itemBuilder: (context, i) => Column(
                     children: [
+                      if (i == 0 && widget.leading != null) widget.leading!,
                       if (widget.posts[i].id == unreadPostId)
                         const Padding(
                           key: Key('board-unread-divider'),

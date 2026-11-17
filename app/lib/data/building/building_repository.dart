@@ -75,24 +75,21 @@ class BuildingHome {
 
   BuildingHome withHouseholdName(String value) =>
       copyWith(householdName: value);
-  BuildingHome copyWith({
-    String? householdName,
-    bool? isAdmin,
-    String? code,
-  }) => BuildingHome(
-    id: id,
-    name: name,
-    address: address,
-    code: code ?? this.code,
-    openReports: openReports,
-    apartment: apartment,
-    entrances: entrances,
-    isAdmin: isAdmin ?? this.isAdmin,
-    isCommittee: isCommittee,
-    isApartmentAdmin: isApartmentAdmin,
-    householdName: householdName ?? this.householdName,
-    entrance: entrance,
-  );
+  BuildingHome copyWith({String? householdName, bool? isAdmin, String? code}) =>
+      BuildingHome(
+        id: id,
+        name: name,
+        address: address,
+        code: code ?? this.code,
+        openReports: openReports,
+        apartment: apartment,
+        entrances: entrances,
+        isAdmin: isAdmin ?? this.isAdmin,
+        isCommittee: isCommittee,
+        isApartmentAdmin: isApartmentAdmin,
+        householdName: householdName ?? this.householdName,
+        entrance: entrance,
+      );
 }
 
 @immutable
@@ -141,6 +138,10 @@ class BoardReport {
   final int count;
   final List<String> reasons;
 }
+
+/// How many posts the live board carries (`ba_board` on the server). Older
+/// posts come from [BuildingRepository.boardPage].
+const kLiveBoardLimit = 100;
 
 @immutable
 class BoardPage {
@@ -506,7 +507,8 @@ class LocalBuildingRepository implements BuildingRepository {
   String rotateCode(BuildingHome home) {
     final index = _homes.indexWhere((h) => h.id == home.id);
     if (index < 0 || !_homes[index].isAdmin) throw StateError('אין הרשאה');
-    final code = 'SH${_id('code').hashCode.abs().toRadixString(36).toUpperCase()}';
+    final code =
+        'SH${_id('code').hashCode.abs().toRadixString(36).toUpperCase()}';
     _homes[index] = _homes[index].copyWith(code: code);
     return code;
   }
@@ -572,7 +574,9 @@ class LocalBuildingRepository implements BuildingRepository {
     if (reply?.mine ?? post.mine) {
       throw StateError('אי אפשר לדווח על תוכן שכתבת.');
     }
-    if (replyId == null ? !_hiddenPosts.add(postId) : !_hiddenReplies.add(replyId)) {
+    if (replyId == null
+        ? !_hiddenPosts.add(postId)
+        : !_hiddenReplies.add(replyId)) {
       return;
     }
     _reports.add(
@@ -594,7 +598,8 @@ class LocalBuildingRepository implements BuildingRepository {
     if (home == null || !home.isAdmin) throw StateError('אין הרשאה');
     return List.unmodifiable(
       _reports.where(
-        (r) => _posts.any((p) => p.id == r.postId && p.buildingId == buildingId),
+        (r) =>
+            _posts.any((p) => p.id == r.postId && p.buildingId == buildingId),
       ),
     );
   }
@@ -632,13 +637,17 @@ class LocalBuildingRepository implements BuildingRepository {
   }) async {
     const size = 30;
     final q = query.trim().toLowerCase();
-    final matches = posts(buildingId).where(
-      (p) =>
-          (before == null || p.createdAt.isBefore(before)) &&
-          (q.isEmpty ||
-              p.text.toLowerCase().contains(q) ||
-              p.replies.any((r) => r.text.toLowerCase().contains(q))),
-    ).toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final matches =
+        _visiblePosts(buildingId)
+            .where(
+              (p) =>
+                  (before == null || p.createdAt.isBefore(before)) &&
+                  (q.isEmpty ||
+                      p.text.toLowerCase().contains(q) ||
+                      p.replies.any((r) => r.text.toLowerCase().contains(q))),
+            )
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return BoardPage(
       List.unmodifiable(matches.take(size)),
       hasMore: matches.length > size,
@@ -745,7 +754,11 @@ class LocalBuildingRepository implements BuildingRepository {
   void readApprovalUpdates(List<String> ids) =>
       _approvalUpdates.removeWhere((update) => ids.contains(update.id));
   @override
-  List<BoardPost> posts(String buildingId) {
+  List<BoardPost> posts(String buildingId) =>
+      List.unmodifiable(_visiblePosts(buildingId).take(kLiveBoardLimit));
+
+  // Every post the resident may see, pinned first, like the server's board.
+  List<BoardPost> _visiblePosts(String buildingId) {
     if (!_homes.any((b) => b.id == buildingId)) return const [];
     final result = [
       for (final p in _posts)
@@ -761,7 +774,7 @@ class LocalBuildingRepository implements BuildingRepository {
           ? (a.pinned ? -1 : 1)
           : b.createdAt.compareTo(a.createdAt),
     );
-    return List.unmodifiable(result);
+    return result;
   }
 
   @override
@@ -1049,15 +1062,110 @@ class BuildingViewModel extends ChangeNotifier {
     (a) => !a.approved && (a.mine || a.needsMyApproval),
   );
   BuildingHome? get active => homes.where((b) => b.id == _activeId).firstOrNull;
+  // Posts older than the live board, loaded on request, per building.
+  final _older = <String, List<BoardPost>>{};
+  final _olderHasMore = <String, bool>{};
+  bool loadingOlder = false;
+
   List<BoardPost> get posts {
-    final result = active == null
-        ? <BoardPost>[]
-        : repository.posts(active!.id).toList();
+    final id = active?.id;
+    final result = id == null ? <BoardPost>[] : repository.posts(id).toList();
+    final older = id == null ? null : _older[id];
+    if (older != null && older.isNotEmpty) {
+      final live = {for (final p in result) p.id};
+      result.addAll(older.where((p) => !live.contains(p.id)));
+    }
     result.sort((a, b) {
       final byTime = b.createdAt.compareTo(a.createdAt);
       return byTime == 0 ? b.id.compareTo(a.id) : byTime;
     });
     return result;
+  }
+
+  /// Whether the board may have posts older than those shown. Before the first
+  /// request this is known only from a full live board.
+  bool get canLoadOlder {
+    final id = active?.id;
+    if (id == null) return false;
+    return _olderHasMore[id] ?? repository.posts(id).length >= kLiveBoardLimit;
+  }
+
+  // Where the live board ends: its oldest unpinned post. Pinned posts can be
+  // older than the rest of the page.
+  DateTime? _liveCursor(String id) {
+    final live = repository.posts(id);
+    final ordinary = live.where((p) => !p.pinned);
+    final from = ordinary.isEmpty ? live : ordinary;
+    return from.isEmpty
+        ? null
+        : from.map((p) => p.createdAt).reduce((a, b) => a.isBefore(b) ? a : b);
+  }
+
+  // Fetches pages from [cursor] until one adds a post not already [known].
+  // A page can hold only known posts, e.g. an old pinned post.
+  Future<(List<BoardPost>, DateTime?, bool)> _nextOlder(
+    String id,
+    DateTime? cursor,
+    Set<String> known,
+  ) async {
+    while (true) {
+      final page = await repository.boardPage(id, before: cursor);
+      final added = page.posts.where((p) => !known.contains(p.id)).toList();
+      if (page.posts.isNotEmpty) {
+        cursor = page.posts
+            .map((p) => p.createdAt)
+            .reduce((a, b) => a.isBefore(b) ? a : b);
+      }
+      if (added.isNotEmpty || !page.hasMore || page.posts.isEmpty) {
+        return (added, cursor, page.hasMore && page.posts.isNotEmpty);
+      }
+    }
+  }
+
+  final _olderCursor = <String, DateTime?>{};
+
+  /// Appends the next page of older posts to the active board.
+  Future<void> loadOlder() async {
+    final id = active?.id;
+    if (id == null || loadingOlder || !canLoadOlder) return;
+    loadingOlder = true;
+    _notify();
+    try {
+      final (added, cursor, more) = await _nextOlder(
+        id,
+        _older[id] == null ? _liveCursor(id) : _olderCursor[id],
+        {for (final p in posts) p.id},
+      );
+      _older[id] = [...?_older[id], ...added];
+      _olderCursor[id] = cursor;
+      _olderHasMore[id] = more;
+    } finally {
+      loadingOlder = false;
+      _notify();
+    }
+  }
+
+  // Older posts are a snapshot; after a change, reload as many as were shown
+  // so replies, reactions and removals on them appear too.
+  Future<void> _reloadOlder() async {
+    final id = _activeId;
+    final shown = id == null ? null : _older[id];
+    if (id == null || shown == null || shown.isEmpty) return;
+    final fresh = <BoardPost>[];
+    final known = {for (final p in repository.posts(id)) p.id};
+    var cursor = _liveCursor(id);
+    var more = true;
+    while (more && fresh.length < shown.length) {
+      final (added, next, hasMore) = await _nextOlder(id, cursor, known);
+      fresh.addAll(added);
+      known.addAll(added.map((p) => p.id));
+      cursor = next;
+      more = hasMore && added.isNotEmpty;
+    }
+    if (_activeId != id) return;
+    _older[id] = fresh;
+    _olderCursor[id] = cursor;
+    _olderHasMore[id] = more;
   }
 
   /// Background synchronization keeps the current screen usable while waiting.
@@ -1069,6 +1177,7 @@ class BuildingViewModel extends ChangeNotifier {
       if (!homes.any((h) => h.id == _activeId)) {
         _activeId = homes.firstOrNull?.id;
       }
+      await _reloadOlder().catchError((Object _) {});
       _watch();
       _notify();
     } finally {
@@ -1109,6 +1218,7 @@ class BuildingViewModel extends ChangeNotifier {
       if (!homes.any((h) => h.id == _activeId)) {
         _activeId = homes.firstOrNull?.id;
       }
+      if (refresh) await _reloadOlder().catchError((Object _) {});
     } finally {
       _pendingOperations--;
       _watch();
