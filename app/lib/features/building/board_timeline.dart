@@ -15,11 +15,15 @@ class BoardTimeline extends StatefulWidget {
     required this.posts,
     required this.readStore,
     required this.itemBuilder,
+    this.header,
   });
   final String buildingId;
   final List<BoardPost> posts;
   final BoardReadStore readStore;
   final Widget Function(BoardPost) itemBuilder;
+
+  /// Shown above the oldest post, such as a button for older posts.
+  final Widget? header;
   @override
   State<BoardTimeline> createState() => BoardTimelineState();
 }
@@ -80,6 +84,17 @@ class BoardTimelineState extends State<BoardTimeline>
       positioning = true;
       unreadPostId = null;
       unawaited(_load());
+    } else if (oldWidget.posts.isNotEmpty && widget.posts.isNotEmpty) {
+      // Older posts arrived above: keep the post that was first in place.
+      final kept = widget.posts.indexWhere(
+        (p) => p.id == oldWidget.posts.first.id,
+      );
+      if (kept > 0) {
+        final request = generation;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_valid(request)) controller.jumpTo(index: kept);
+        });
+      }
     }
   }
 
@@ -226,6 +241,7 @@ class BoardTimelineState extends State<BoardTimeline>
                   padding: const EdgeInsets.fromLTRB(14, 2, 14, 12),
                   itemBuilder: (context, i) => Column(
                     children: [
+                      if (i == 0 && widget.header != null) widget.header!,
                       if (widget.posts[i].id == unreadPostId)
                         const Padding(
                           key: Key('board-unread-divider'),

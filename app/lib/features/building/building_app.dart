@@ -672,11 +672,36 @@ class _BuildingExperienceState extends State<BuildingExperience>
                   posts: posts.reversed.toList(),
                   readStore: vm.readStore,
                   itemBuilder: _postCard,
+                  header: vm.mayHaveOlder ? _olderPostsButton() : null,
                 ),
         ),
       ],
     );
   }
+
+  Widget _olderPostsButton() => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Column(
+      children: [
+        TextButton.icon(
+          key: const Key('board-older-posts'),
+          onPressed: vm.loadingOlder ? null : vm.loadOlder,
+          icon: vm.loadingOlder
+              ? const SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.history_rounded, size: 18),
+          label: const Text('טעינת פרסומים קודמים'),
+        ),
+        if (vm.olderError != null)
+          const Text(
+            'הטעינה נכשלה. אפשר לנסות שוב.',
+            style: TextStyle(fontSize: 12, color: glassMuted),
+          ),
+      ],
+    ),
+  );
 
   Widget _pinnedBanner(List<BoardPost> pinned) => Padding(
     padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),

@@ -1025,6 +1025,76 @@ class BuildingViewModel extends ChangeNotifier {
   String? _changesFor;
   Timer? _changeDebounce;
 
+  /// The live board (`ba_board`) carries at most this many posts.
+  static const liveBoardLimit = 100;
+
+  // Posts older than the live board, loaded on request, per building.
+  final Map<String, List<BoardPost>> _older = {};
+  final Map<String, bool> _olderHasMore = {};
+  bool loadingOlder = false;
+  Object? olderError;
+
+  /// Whether the board may hold posts older than the ones shown.
+  bool get mayHaveOlder {
+    final id = active?.id;
+    if (id == null) return false;
+    final known = _olderHasMore[id];
+    if (known != null) return known;
+    return repository.posts(id).where((p) => !p.pinned).length >=
+        liveBoardLimit;
+  }
+
+  /// Loads the page of posts before the oldest one shown.
+  Future<void> loadOlder() async {
+    final id = active?.id;
+    if (id == null || loadingOlder || !mayHaveOlder) return;
+    final shown = posts.where((p) => !p.pinned);
+    if (shown.isEmpty) return;
+    loadingOlder = true;
+    olderError = null;
+    _notify();
+    try {
+      final page = await repository.boardPage(
+        id,
+        before: shown.last.createdAt,
+      );
+      _older[id] = [...?_older[id], ...page.posts];
+      _olderHasMore[id] = page.hasMore;
+    } catch (error) {
+      olderError = error;
+    } finally {
+      loadingOlder = false;
+      _notify();
+    }
+  }
+
+  // Reload the older pages already shown, so actions on them appear.
+  Future<void> _reloadOlder() async {
+    final id = _activeId;
+    final previous = id == null ? null : _older[id];
+    if (id == null || previous == null || previous.isEmpty) return;
+    final live = repository.posts(id).where((p) => !p.pinned).toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    if (live.isEmpty) return;
+    final reloaded = <BoardPost>[];
+    var before = live.first.createdAt;
+    var more = true;
+    try {
+      while (more && reloaded.length < previous.length) {
+        final page = await repository.boardPage(id, before: before);
+        if (page.posts.isEmpty) break;
+        reloaded.addAll(page.posts);
+        before = page.posts.last.createdAt;
+        more = page.hasMore;
+      }
+    } catch (_) {
+      return; // Keep the previous older posts; the next action retries.
+    }
+    if (_activeId != id) return;
+    _older[id] = reloaded;
+    _olderHasMore[id] = more;
+  }
+
   // Follow the active building's change signal; polling stays as the fallback.
   void _watch() {
     if (_disposed || _changesFor == _activeId) return;
@@ -1053,6 +1123,11 @@ class BuildingViewModel extends ChangeNotifier {
     final result = active == null
         ? <BoardPost>[]
         : repository.posts(active!.id).toList();
+    final older = active == null ? null : _older[active!.id];
+    if (older != null) {
+      final ids = {for (final p in result) p.id};
+      result.addAll(older.where((p) => ids.add(p.id)));
+    }
     result.sort((a, b) {
       final byTime = b.createdAt.compareTo(a.createdAt);
       return byTime == 0 ? b.id.compareTo(a.id) : byTime;
@@ -1105,7 +1180,10 @@ class BuildingViewModel extends ChangeNotifier {
     _notify();
     try {
       await action();
-      if (refresh) await repository.refresh(buildingId: _activeId);
+      if (refresh) {
+        await repository.refresh(buildingId: _activeId);
+        await _reloadOlder();
+      }
       if (!homes.any((h) => h.id == _activeId)) {
         _activeId = homes.firstOrNull?.id;
       }
