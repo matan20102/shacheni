@@ -97,7 +97,7 @@ extension _BoardTab on _BuildingExperienceState {
       borderRadius: BorderRadius.circular(12),
       child: GlassPanel(
         radius: 12,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
         child: Row(
           children: [
             Icon(
@@ -202,15 +202,21 @@ extension _BoardTab on _BuildingExperienceState {
                   _postOptions(post),
                 ],
               ),
-              InkWell(
-                onTap: () => _conversation(post.id),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Text(
-                    post.text,
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 14, height: 1.4),
+              // Read as text by screen readers; the replies button below
+              // opens the same conversation with a full-size tap target.
+              Semantics(
+                label: post.text,
+                excludeSemantics: true,
+                child: InkWell(
+                  onTap: () => _conversation(post.id),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Text(
+                      post.text,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 14, height: 1.4),
+                    ),
                   ),
                 ),
               ),
@@ -225,16 +231,17 @@ extension _BoardTab on _BuildingExperienceState {
                 children: [
                   for (final reaction in post.reactions.entries)
                     ActionChip(
-                      visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      tooltip: post.myReactions.contains(reaction.key)
+                          ? 'ביטול התגובה ${reaction.key}'
+                          : 'הוספת תגובה ${reaction.key}',
                       backgroundColor: post.myReactions.contains(reaction.key)
                           ? context.glass.accent.withValues(alpha: .28)
                           : context.glass.chip,
                       side: BorderSide.none,
                       label: Text(
                         '${reaction.key} ${reaction.value}',
-                        style: const TextStyle(fontSize: 11),
+                        style: const TextStyle(fontSize: 12),
                       ),
                       onPressed: vm.busy
                           ? null
@@ -260,9 +267,8 @@ extension _BoardTab on _BuildingExperienceState {
                   ),
                   TextButton.icon(
                     style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 32),
+                      minimumSize: const Size(48, 48),
                       padding: const EdgeInsets.symmetric(horizontal: 5),
-                      visualDensity: VisualDensity.compact,
                     ),
                     onPressed: () => _conversation(post.id),
                     icon: const Icon(
@@ -271,7 +277,7 @@ extension _BoardTab on _BuildingExperienceState {
                     ),
                     label: Text(
                       _replyCount(post.replies.length),
-                      style: const TextStyle(fontSize: 11),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ),
                 ],

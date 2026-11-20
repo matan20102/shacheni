@@ -429,26 +429,22 @@ class _BuildingExperienceState extends State<BuildingExperience>
               ),
             ),
             const SizedBox(width: Space.m),
-            Tooltip(
-              message: 'עדכונים ובקשות',
-              child: IconButton.filledTonal(
-                key: const Key('building-updates'),
-                onPressed: _applications,
-                style: IconButton.styleFrom(
-                  backgroundColor: context.glass.glassStrong,
+            IconButton.filledTonal(
+              key: const Key('building-updates'),
+              tooltip: 'עדכונים ובקשות',
+              onPressed: _applications,
+              style: IconButton.styleFrom(
+                backgroundColor: context.glass.glassStrong,
+              ),
+              icon: Badge(
+                key: const Key('building-updates-badge'),
+                isLabelVisible: vm.notificationCount > 0,
+                label: Text(
+                  vm.notificationCount > 99 ? '99+' : '${vm.notificationCount}',
                 ),
-                icon: Badge(
-                  key: const Key('building-updates-badge'),
-                  isLabelVisible: vm.notificationCount > 0,
-                  label: Text(
-                    vm.notificationCount > 99
-                        ? '99+'
-                        : '${vm.notificationCount}',
-                  ),
-                  child: Icon(
-                    Icons.notifications_none_rounded,
-                    color: context.glass.ink,
-                  ),
+                child: Icon(
+                  Icons.notifications_none_rounded,
+                  color: context.glass.ink,
                 ),
               ),
             ),

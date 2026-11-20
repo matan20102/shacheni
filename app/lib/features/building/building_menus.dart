@@ -100,12 +100,17 @@ extension _BuildingMenus on _BuildingExperienceState {
                               color: context.glass.muted,
                             ),
                           ),
-                          SelectableText(
-                            vm.active!.code,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: context.glass.accent,
+                          // The copy button next to it serves screen readers.
+                          Semantics(
+                            label: 'קוד הבניין ${vm.active!.code}',
+                            excludeSemantics: true,
+                            child: SelectableText(
+                              vm.active!.code,
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: context.glass.accent,
+                              ),
                             ),
                           ),
                         ],
