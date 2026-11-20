@@ -117,11 +117,11 @@ class _PlatformConsoleState extends State<PlatformConsole> {
               listenable: vm,
               builder: (context, _) => Column(
                 children: [
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
                     child: Text(
                       'משתמשים, בניינים ובקשות · שינויים נשמרים ביומן',
-                      style: TextStyle(color: glassMuted),
+                      style: TextStyle(color: context.glass.muted),
                     ),
                   ),
                   SingleChildScrollView(
@@ -215,8 +215,8 @@ class _PlatformConsoleState extends State<PlatformConsole> {
                                       if (item.subtitle.isNotEmpty)
                                         SelectableText(
                                           item.subtitle,
-                                          style: const TextStyle(
-                                            color: glassMuted,
+                                          style: TextStyle(
+                                            color: context.glass.muted,
                                           ),
                                         ),
                                       const SizedBox(height: 10),

@@ -96,9 +96,9 @@ class BuildingManagementSheet extends StatelessWidget {
                 label: const Text('ארכוב הבניין'),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'ארכוב סוגר את הבניין לפעילות ולהצטרפות ושומר את ההיסטוריה.',
-                style: TextStyle(color: glassMuted),
+                style: TextStyle(color: context.glass.muted),
               ),
             ],
           ],
@@ -183,7 +183,9 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
                   TextButton.icon(
                     key: const Key('resident-remove'),
                     onPressed: () => Navigator.pop(ctx, 'remove'),
-                    style: TextButton.styleFrom(foregroundColor: glassError),
+                    style: TextButton.styleFrom(
+                      foregroundColor: context.glass.error,
+                    ),
                     icon: const Icon(Icons.person_remove_outlined),
                     label: const Text('הסרה מהבניין'),
                   ),
@@ -246,9 +248,9 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
         children: [
           Text('השכנים בבניין', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'מסודרים לפי דירה · מנהל הבית מופיע ראשון',
-            style: TextStyle(color: glassMuted, fontSize: 12),
+            style: TextStyle(color: context.glass.muted, fontSize: 12),
           ),
           const SizedBox(height: 14),
           if (model.loading || model.saving) const LinearProgressIndicator(),
@@ -281,9 +283,9 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
                   children: [
                     Text(
                       'דירה ${entry.key}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: glassTeal,
+                        color: context.glass.accent,
                       ),
                     ),
                     for (final member in entry.value)
@@ -291,7 +293,7 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
                         key: ValueKey('resident-${member.id}'),
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
-                          backgroundColor: const Color(0xFFE0F0EE),
+                          backgroundColor: context.glass.chip,
                           child: Text(
                             member.name.isEmpty
                                 ? 'ש'

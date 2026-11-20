@@ -118,7 +118,7 @@ class _AddressPickerState extends State<AddressPicker> {
             elevation: 6,
             borderRadius: BorderRadius.circular(18),
             clipBehavior: Clip.antiAlias,
-            color: const Color(0xFFF5FAFB),
+            color: context.glass.sheet,
             child: SizedBox(
               width: (MediaQuery.sizeOf(context).width - 48).clamp(200, 592),
               child: ConstrainedBox(
@@ -132,9 +132,9 @@ class _AddressPickerState extends State<AddressPicker> {
                     return ListTile(
                       dense: true,
                       visualDensity: VisualDensity.compact,
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.location_on_outlined,
-                        color: glassTeal,
+                        color: context.glass.accent,
                         size: 20,
                       ),
                       title: Text(option.street),
@@ -169,7 +169,7 @@ class _AddressPickerState extends State<AddressPicker> {
         selected == null
             ? 'בחרו רחוב ועיר מהרשימה, או הקלידו אותם ידנית.'
             : 'מקור הרחובות: רשות האוכלוסין וההגירה · data.gov.il',
-        style: const TextStyle(fontSize: 11, color: glassMuted),
+        style: TextStyle(fontSize: 11, color: context.glass.muted),
       ),
     ],
   );

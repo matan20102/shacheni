@@ -243,7 +243,7 @@ class BoardTimelineState extends State<BoardTimeline>
                     children: [
                       if (i == 0 && widget.header != null) widget.header!,
                       if (widget.posts[i].id == unreadPostId)
-                        const Padding(
+                        Padding(
                           key: Key('board-unread-divider'),
                           padding: EdgeInsets.symmetric(vertical: 10),
                           child: Row(
@@ -255,7 +255,7 @@ class BoardTimelineState extends State<BoardTimeline>
                                   'לא נקרא',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: glassMuted,
+                                    color: context.glass.muted,
                                   ),
                                 ),
                               ),
