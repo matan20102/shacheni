@@ -78,9 +78,9 @@ extension _JoinRequests on _BuildingExperienceState {
                     style: Theme.of(ctx).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'הגישה לתוכן הבניין נפתחת רק אחרי האישורים הנדרשים.',
-                    style: TextStyle(color: glassMuted),
+                    style: TextStyle(color: context.glass.muted),
                   ),
                   const SizedBox(height: 20),
                   if (updates.isEmpty &&
@@ -218,12 +218,15 @@ extension _JoinRequests on _BuildingExperienceState {
         if (!a.mine)
           Text(
             a.applicantName,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: glassTeal,
+              color: context.glass.accent,
             ),
           ),
-        Text('דירה ${a.apartment}', style: const TextStyle(color: glassMuted)),
+        Text(
+          'דירה ${a.apartment}',
+          style: TextStyle(color: context.glass.muted),
+        ),
         const SizedBox(height: 14),
         _approvalLine('מנהל הבניין', a.buildingApproved),
         if (a.apartmentHasAdmin) ...[
@@ -235,7 +238,7 @@ extension _JoinRequests on _BuildingExperienceState {
             a.mine
                 ? 'דירה חדשה: לאחר אישור הבניין תהיה מנהל הדירה הראשון.'
                 : 'דירה חדשה: המצטרף הראשון יהפוך למנהל הדירה.',
-            style: TextStyle(fontSize: 12, color: glassMuted),
+            style: TextStyle(fontSize: 12, color: context.glass.muted),
           ),
         ],
       ],
@@ -247,14 +250,14 @@ extension _JoinRequests on _BuildingExperienceState {
       Icon(
         approved ? Icons.check_circle_outline : Icons.schedule_rounded,
         size: 18,
-        color: approved ? glassTeal : glassMuted,
+        color: approved ? context.glass.accent : context.glass.muted,
       ),
       const SizedBox(width: 8),
       Expanded(child: Text(label)),
       Text(
         approved ? 'אושר' : 'ממתין לאישור',
         style: TextStyle(
-          color: approved ? glassTeal : glassMuted,
+          color: approved ? context.glass.accent : context.glass.muted,
           fontSize: 12,
         ),
       ),
@@ -462,9 +465,9 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'מזינים את הקוד שקיבלת ממנהל הבניין.',
-            style: TextStyle(color: glassMuted),
+            style: TextStyle(color: context.glass.muted),
           ),
           const SizedBox(height: 22),
           TextField(
@@ -487,9 +490,9 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
           ),
           const SizedBox(height: 10),
           if (!widget.repository.isRemote)
-            const Text(
+            Text(
               'קוד לבדיקה: NEIGHBOR. בדירות 1, 2 ו־12 יש מנהל דירה.',
-              style: TextStyle(fontSize: 12, color: glassMuted),
+              style: TextStyle(fontSize: 12, color: context.glass.muted),
             ),
           const SizedBox(height: 12),
           OutlinedButton(
@@ -497,7 +500,7 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
             child: const Text('בדיקת הקוד'),
           ),
           if (submitError != null)
-            Text(submitError!, style: const TextStyle(color: glassError)),
+            Text(submitError!, style: TextStyle(color: context.glass.error)),
           if (found != null) ...[
             const SizedBox(height: 18),
             GlassPanel(
@@ -515,12 +518,12 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
             ),
             const SizedBox(height: 12),
             if (checkingApartment)
-              const Text(
+              Text(
                 'בודקים את הדירה…',
-                style: TextStyle(color: glassMuted),
+                style: TextStyle(color: context.glass.muted),
               ),
             if (lookupError != null) ...[
-              Text(lookupError!, style: const TextStyle(color: glassError)),
+              Text(lookupError!, style: TextStyle(color: context.glass.error)),
               TextButton(
                 onPressed: _queueApartmentCheck,
                 child: const Text('בדיקת הדירה מחדש'),

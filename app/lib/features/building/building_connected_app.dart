@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../app/appearance.dart';
 import '../../app/config.dart';
 import '../../data/auth.dart';
 import '../../app/brand.dart';
@@ -140,68 +141,73 @@ class _BuildingConnectedAppState extends State<BuildingConnectedApp> {
   }
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    navigatorKey: navigator,
-    title: '$appNameHebrew · $appNameEnglish',
-    debugShowCheckedModeBanner: false,
-    theme: buildingTheme(),
-    locale: const Locale('he'),
-    supportedLocales: const [Locale('he')],
-    localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    home: loading
-        ? const GlassBackground(
-            child: Scaffold(body: Center(child: CircularProgressIndicator())),
-          )
-        : error != null
-        ? GlassBackground(
-            child: Scaffold(
-              body: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.cloud_off_outlined,
-                        size: 56,
-                        color: glassTeal,
-                      ),
-                      const SizedBox(height: 18),
-                      Text(error!, textAlign: TextAlign.center),
-                      const SizedBox(height: 18),
-                      FilledButton(
-                        onPressed: refresh,
-                        child: const Text('ניסיון נוסף'),
-                      ),
-                      if (signedIn)
-                        TextButton(
-                          onPressed: auth.signOut,
-                          child: const Text('יציאה מהחשבון'),
+  Widget build(BuildContext context) => ValueListenableBuilder(
+    valueListenable: appearance,
+    builder: (context, mode, _) => MaterialApp(
+      navigatorKey: navigator,
+      title: '$appNameHebrew · $appNameEnglish',
+      debugShowCheckedModeBanner: false,
+      theme: buildingTheme(),
+      darkTheme: buildingTheme(Brightness.dark),
+      themeMode: mode,
+      locale: const Locale('he'),
+      supportedLocales: const [Locale('he')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      home: loading
+          ? const GlassBackground(
+              child: Scaffold(body: LoadingState(label: 'טוענים את הבניין…')),
+            )
+          : error != null
+          ? GlassBackground(
+              child: Scaffold(
+                body: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(Space.xxl),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 460),
+                      child: StateMessage(
+                        icon: Icons.cloud_off_outlined,
+                        title: 'משהו השתבש',
+                        text: error!,
+                        error: true,
+                        action: Column(
+                          children: [
+                            FilledButton(
+                              onPressed: refresh,
+                              child: const Text('ניסיון נוסף'),
+                            ),
+                            if (signedIn)
+                              TextButton(
+                                onPressed: auth.signOut,
+                                child: const Text('יציאה מהחשבון'),
+                              ),
+                          ],
                         ),
-                    ],
+                      ),
+                    ),
                   ),
                 ),
               ),
+            )
+          : !signedIn
+          ? _GoogleWelcome(auth: auth)
+          : documents.isNotEmpty
+          ? BuildingConsentScreen(
+              documents: documents,
+              onAccept: (types) async {
+                await auth.acceptLegal(types, 'he');
+                await refresh();
+              },
+              onSignOut: auth.signOut,
+            )
+          : BuildingExperience(
+              key: ObjectKey(vm),
+              viewModel: vm,
+              onSignOut: auth.signOut,
+              initialJoinCode: joinCode,
+              onJoinCodeUsed: () => unawaited(_forgetJoinCode()),
             ),
-          )
-        : !signedIn
-        ? _GoogleWelcome(auth: auth)
-        : documents.isNotEmpty
-        ? BuildingConsentScreen(
-            documents: documents,
-            onAccept: (types) async {
-              await auth.acceptLegal(types, 'he');
-              await refresh();
-            },
-            onSignOut: auth.signOut,
-          )
-        : BuildingExperience(
-            key: ObjectKey(vm),
-            viewModel: vm,
-            onSignOut: auth.signOut,
-            initialJoinCode: joinCode,
-            onJoinCodeUsed: () => unawaited(_forgetJoinCode()),
-          ),
+    ),
   );
 }
 
@@ -235,12 +241,12 @@ class _GoogleWelcomeState extends State<_GoogleWelcome> {
                   style: Theme.of(context).textTheme.headlineLarge,
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'כל מה שקורה בבניין, במקום אחד פשוט.\nלהתעדכן, לעזור ולנהל את הבית יחד.',
                   style: TextStyle(
                     fontSize: 17,
                     height: 1.7,
-                    color: glassMuted,
+                    color: context.glass.muted,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -273,14 +279,14 @@ class _GoogleWelcomeState extends State<_GoogleWelcome> {
                     child: Text(
                       error!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: glassError),
+                      style: TextStyle(color: context.glass.error),
                     ),
                   ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'מצטרפים עם קוד בניין, או יוצרים בית חדש ב$appNameHebrew.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: glassMuted, fontSize: 13),
+                  style: TextStyle(color: context.glass.muted, fontSize: 13),
                 ),
               ],
             ),

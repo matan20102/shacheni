@@ -66,18 +66,21 @@ class _BoardReportsPanelState extends State<BoardReportsPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('דיווחים על תוכן', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            'דיווחים על תוכן',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'שכנים ביקשו לבדוק את התוכן הזה. הכותב אינו רואה מי דיווח.',
-            style: TextStyle(color: glassMuted, fontSize: 12),
+            style: TextStyle(color: context.glass.muted, fontSize: 12),
           ),
           const SizedBox(height: 14),
           if (saving) const LinearProgressIndicator(minHeight: 2),
           if (error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text(error!, style: const TextStyle(color: glassError)),
+              child: Text(error!, style: TextStyle(color: context.glass.error)),
             ),
           for (final report in reports)
             Padding(
@@ -92,9 +95,9 @@ class _BoardReportsPanelState extends State<BoardReportsPanel> {
                   children: [
                     Text(
                       '${report.replyId == null ? 'פרסום' : 'תגובה'} של ${report.author} · ${report.count == 1 ? 'דיווח אחד' : '${report.count} דיווחים'}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: glassTeal,
+                        color: context.glass.accent,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -105,9 +108,9 @@ class _BoardReportsPanelState extends State<BoardReportsPanel> {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                           'סיבה: $reason',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: glassMuted,
+                            color: context.glass.muted,
                           ),
                         ),
                       ),

@@ -202,9 +202,9 @@ class _ParkingScreenState extends State<ParkingScreen>
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'חניה פנויה אצלך? לשכן זה יכול לעשות את היום.',
-              style: TextStyle(color: glassMuted),
+              style: TextStyle(color: context.glass.muted),
             ),
             const SizedBox(height: 12),
             Align(
@@ -325,8 +325,8 @@ class _ParkingScreenState extends State<ParkingScreen>
                         const SizedBox(height: 4),
                         Text(
                           _historyStatus(past),
-                          style: const TextStyle(
-                            color: glassMuted,
+                          style: TextStyle(
+                            color: context.glass.muted,
                             fontSize: 12,
                           ),
                         ),
@@ -349,9 +349,9 @@ class _ParkingScreenState extends State<ParkingScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.local_parking_rounded,
-                      color: glassTeal,
+                      color: context.glass.accent,
                       size: 34,
                     ),
                     const SizedBox(height: 12),
@@ -372,7 +372,7 @@ class _ParkingScreenState extends State<ParkingScreen>
                         'חניה שהזמנת תופיע כאן עם השעות והמיקום.',
                         'שיתופים והזמנות שהסתיימו או בוטלו יופיעו כאן.',
                       ][section],
-                      style: const TextStyle(color: glassMuted),
+                      style: TextStyle(color: context.glass.muted),
                     ),
                   ],
                 ),
@@ -396,10 +396,10 @@ class _ParkingScreenState extends State<ParkingScreen>
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: const Color(0xFFD9EFED),
+          color: context.glass.chip,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: const Icon(Icons.local_parking_rounded, color: glassTeal),
+        child: Icon(Icons.local_parking_rounded, color: context.glass.accent),
       ),
       const SizedBox(width: 12),
       Expanded(
@@ -412,7 +412,7 @@ class _ParkingScreenState extends State<ParkingScreen>
             ),
             Text(
               '$subtitle${space.level.isEmpty ? '' : ' · מפלס \u2066${space.level}\u2069'}',
-              style: const TextStyle(fontSize: 12, color: glassMuted),
+              style: TextStyle(fontSize: 12, color: context.glass.muted),
             ),
           ],
         ),
@@ -436,7 +436,7 @@ class _ParkingScreenState extends State<ParkingScreen>
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               o.space.notes,
-              style: const TextStyle(color: glassMuted),
+              style: TextStyle(color: context.glass.muted),
             ),
           ),
         const SizedBox(height: 12),
@@ -536,6 +536,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
           (start: shift(start, i), end: shift(end, i)),
     ];
   }
+
   late DateTime start = _initialStart();
   DateTime _initialStart() {
     final now = DateTime.now();
@@ -677,7 +678,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
               widget.space == null
                   ? 'החניה תשויך לדירה ${widget.apartment}. כל בני הבית יוכלו לנהל את השיתוף.'
                   : 'השכנים יוכלו להזמין בחינם את כל הטווח שפרסמת, ללא אישור נוסף.',
-              style: const TextStyle(color: glassMuted),
+              style: TextStyle(color: context.glass.muted),
             ),
             const SizedBox(height: 22),
             if (describing) ...[
@@ -758,7 +759,10 @@ class _ParkingEditorState extends State<ParkingEditor> {
             if (error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
-                child: Text(error!, style: const TextStyle(color: glassError)),
+                child: Text(
+                  error!,
+                  style: TextStyle(color: context.glass.error),
+                ),
               ),
             const SizedBox(height: 24),
             FilledButton(

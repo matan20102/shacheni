@@ -73,13 +73,13 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'לפני שנכנסים, מכירים את תנאי השימוש\nואת הדרך שבה מטפלים במידע שלך.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15,
                       height: 1.7,
-                      color: glassMuted,
+                      color: context.glass.muted,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -91,8 +91,7 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                     child: Column(
                       children: [
                         for (var i = 0; i < widget.documents.length; i++) ...[
-                          if (i > 0)
-                            const Divider(height: 1, color: Color(0xFFDCE8EA)),
+                          if (i > 0) const Divider(height: 1),
                           _DocumentLink(
                             document: widget.documents[i],
                             onTap: () => _read(widget.documents[i]),
@@ -105,7 +104,6 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                   GlassPanel(
                     padding: const EdgeInsets.all(8),
                     radius: 22,
-                    opacity: .55,
                     child: CheckboxListTile(
                       key: const Key('legal-consent-checkbox'),
                       value: accepted,
@@ -119,7 +117,7 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                         _acceptanceLabel(),
                         style: const TextStyle(fontSize: 13, height: 1.7),
                       ),
-                      activeColor: glassTeal,
+                      activeColor: context.glass.accent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -134,7 +132,7 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                         child: Text(
                           error!,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: glassError),
+                          style: TextStyle(color: context.glass.error),
                         ),
                       ),
                     ),
@@ -147,12 +145,12 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                         ? null
                         : _continue,
                     icon: busy
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: context.glass.onAccent,
                             ),
                           )
                         : const Icon(Icons.arrow_forward_rounded, size: 20),
@@ -161,9 +159,12 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                   const SizedBox(height: 10),
                   TextButton(
                     onPressed: busy ? null : widget.onSignOut,
-                    child: const Text(
+                    child: Text(
                       'יציאה מהחשבון',
-                      style: TextStyle(color: glassMuted, fontSize: 12),
+                      style: TextStyle(
+                        color: context.glass.muted,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],
@@ -222,7 +223,10 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                       ),
                       Text(
                         'גרסה ${document.version}',
-                        style: const TextStyle(fontSize: 11, color: glassMuted),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: context.glass.muted,
+                        ),
                       ),
                     ],
                   ),
@@ -235,7 +239,7 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFDCE8EA)),
+          const Divider(height: 1),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -285,14 +289,14 @@ class _DocumentLink extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(11),
             decoration: BoxDecoration(
-              color: glassTeal.withValues(alpha: .08),
+              color: context.glass.accent.withValues(alpha: .08),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
               document.type == 'privacy'
                   ? Icons.shield_outlined
                   : Icons.description_outlined,
-              color: glassTeal,
+              color: context.glass.accent,
               size: 24,
             ),
           ),
@@ -313,13 +317,17 @@ class _DocumentLink extends StatelessWidget {
                   document.type == 'privacy'
                       ? 'איך מטפלים במידע שלך'
                       : 'הכללים לשימוש ב$appNameHebrew',
-                  style: const TextStyle(fontSize: 12, color: glassMuted),
+                  style: TextStyle(fontSize: 12, color: context.glass.muted),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          const Icon(Icons.chevron_left_rounded, color: glassMuted, size: 22),
+          Icon(
+            Icons.chevron_left_rounded,
+            color: context.glass.muted,
+            size: 22,
+          ),
         ],
       ),
     ),

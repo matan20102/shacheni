@@ -14,14 +14,13 @@ extension _HomeTab on _BuildingExperienceState {
           style: Theme.of(context).textTheme.headlineLarge,
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'הדברים הקטנים שמחברים את הבניין.',
-          style: TextStyle(color: glassMuted, fontSize: 15),
+          style: TextStyle(color: context.glass.muted, fontSize: 15),
         ),
         const SizedBox(height: 24),
         GlassPanel(
-          tint: const Color(0xFFBEE7E3),
-          opacity: .55,
+          tone: GlassTone.accent,
           child: Row(
             children: [
               Expanded(
@@ -47,7 +46,7 @@ extension _HomeTab on _BuildingExperienceState {
                           : vm.active!.householdName.isEmpty
                           ? vm.active!.name
                           : '${vm.active!.name} · ${_apartmentLabel(vm.active!)}',
-                      style: const TextStyle(color: glassMuted),
+                      style: TextStyle(color: context.glass.muted),
                     ),
                     const SizedBox(height: 12),
                     SoftTag(
@@ -165,7 +164,10 @@ extension _HomeTab on _BuildingExperienceState {
                       const SizedBox(height: 5),
                       Text(
                         '${_replyCount(post.replies.length)} · לפתיחת השיחה',
-                        style: const TextStyle(color: glassTeal, fontSize: 12),
+                        style: TextStyle(
+                          color: context.glass.accent,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -196,10 +198,10 @@ class _FeatureLine extends StatelessWidget {
       Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: glassTeal.withValues(alpha: .09),
+          color: context.glass.accent.withValues(alpha: .09),
           borderRadius: BorderRadius.circular(15),
         ),
-        child: Icon(icon, color: glassTeal, size: 24),
+        child: Icon(icon, color: context.glass.accent, size: 24),
       ),
       const SizedBox(width: 14),
       Expanded(
@@ -213,9 +215,9 @@ class _FeatureLine extends StatelessWidget {
             const SizedBox(height: 3),
             Text(
               description,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: glassMuted,
+                color: context.glass.muted,
                 height: 1.6,
               ),
             ),
@@ -240,7 +242,7 @@ class _ActionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: glassTeal, size: 28),
+          Icon(icon, color: context.glass.accent, size: 28),
           const SizedBox(height: 15),
           Text(
             title,
@@ -249,7 +251,7 @@ class _ActionCard extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             subtitle,
-            style: const TextStyle(fontSize: 11, color: glassMuted),
+            style: TextStyle(fontSize: 11, color: context.glass.muted),
           ),
         ],
       ),

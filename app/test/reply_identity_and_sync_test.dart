@@ -109,9 +109,9 @@ void main() {
             .ancestor(of: find.text(text), matching: find.byType(GlassPanel))
             .first,
       );
-      expect(panel('תגובה שלי').tint, const Color(0xFFD8F0ED));
-      expect(panel('תגובה של שכן').tint, Colors.white);
-      expect(panel('שם אינו זהות').tint, Colors.white);
+      expect(panel('תגובה שלי').tone, GlassTone.mine);
+      expect(panel('תגובה של שכן').tone, GlassTone.strong);
+      expect(panel('שם אינו זהות').tone, GlassTone.strong);
       expect(tester.takeException(), isNull);
     },
   );
