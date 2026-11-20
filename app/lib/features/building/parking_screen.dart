@@ -205,13 +205,7 @@ class _ParkingScreenState extends State<ParkingScreen>
     );
     if (saved == true && mounted) {
       setState(() => section = 1);
-      _message(
-        space == null
-            ? 'החניה נוספה לדירה'
-            : details
-            ? 'פרטי החניה עודכנו'
-            : 'הזמינות פורסמה לשכנים',
-      );
+      _message(details ? 'פרטי החניה עודכנו' : 'החניה פורסמה לשכנים');
     }
   }
 
@@ -304,14 +298,11 @@ class _ParkingScreenState extends State<ParkingScreen>
               style: TextStyle(color: context.glass.muted),
             ),
             const SizedBox(height: Space.m),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton.icon(
-                key: const Key('parking-add'),
-                onPressed: model.saving ? null : () => _editor(),
-                icon: const Icon(Icons.add_circle_outline_rounded),
-                label: const Text('הוספת חניה לדירה'),
-              ),
+            FilledButton.icon(
+              key: const Key('parking-share'),
+              onPressed: model.saving || model.loading ? null : () => _editor(),
+              icon: const Icon(Icons.local_parking_rounded),
+              label: const Text('שיתוף החניה שלי'),
             ),
             const SizedBox(height: Space.m),
             Wrap(
@@ -465,7 +456,7 @@ class _ParkingScreenState extends State<ParkingScreen>
                     Text(
                       [
                         'כששכן ישתף חניה, אפשר יהיה להזמין אותה כאן.',
-                        'מוסיפים חניה פעם אחת. כל בני הבית יוכלו לשתף אותה כשהיא פנויה.',
+                        'לוחצים ״שיתוף החניה שלי״, בוחרים מתי היא פנויה, וזהו. החניה נשמרת לכל בני הבית.',
                         'חניה שהזמנת תופיע כאן עם השעות והמיקום.',
                         'שיתופים והזמנות שהסתיימו או בוטלו יופיעו כאן.',
                       ][section],
@@ -601,6 +592,7 @@ class ParkingEditor extends StatefulWidget {
   final ParkingSpace? space;
 
   /// Edits the space itself instead of publishing a window for it.
+  /// Otherwise the editor shares a space, adding it first when it is new.
   final bool details;
   @override
   State<ParkingEditor> createState() => _ParkingEditorState();
@@ -608,10 +600,29 @@ class ParkingEditor extends StatefulWidget {
 
 class _ParkingEditorState extends State<ParkingEditor> {
   final form = GlobalKey<FormState>();
+
+  /// The household's spaces, to pick which one is being shared.
+  late final List<ParkingSpace> spaces = widget.model.snapshot.spaces;
+
+  /// The space being shared; null means a new one, typed in below.
+  late ParkingSpace? chosen =
+      widget.space ?? (spaces.isEmpty ? null : spaces.first);
+
+  /// Set once a new space was saved, so a retry after a failed publish
+  /// shares it instead of adding it twice.
+  String? createdId;
+
   late final label = TextEditingController(text: widget.space?.label ?? ''),
-      level = TextEditingController(text: widget.space?.level ?? ''),
-      notes = TextEditingController(text: widget.space?.notes ?? '');
-  bool get describing => widget.space == null || widget.details;
+      level = TextEditingController(text: chosen?.level ?? ''),
+      notes = TextEditingController(text: chosen?.notes ?? '');
+  bool get describing => widget.details;
+
+  void _choose(ParkingSpace? space) => setState(() {
+    chosen = space;
+    level.text = space?.level ?? '';
+    notes.text = space?.notes ?? '';
+    error = null;
+  });
 
   /// false: one continuous stretch (start to end, may span days).
   /// true: the same hours on chosen weekdays, for a number of weeks.
@@ -724,9 +735,9 @@ class _ParkingEditorState extends State<ParkingEditor> {
   }
 
   bool get _spaceDetailsChanged =>
-      widget.space != null &&
-      (level.text.trim() != widget.space!.level ||
-          notes.text.trim() != widget.space!.notes);
+      chosen != null &&
+      (level.text.trim() != chosen!.level ||
+          notes.text.trim() != chosen!.notes);
 
   Future<void> _save() async {
     if (saving || !form.currentState!.validate()) return;
@@ -757,14 +768,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
       error = null;
     });
     final ok = await widget.model.run(
-      () => widget.space == null
-          ? widget.model.repository.addSpace(
-              widget.model.buildingId,
-              label.text,
-              level.text,
-              notes.text,
-            )
-          : widget.details
+      () => widget.details
           ? widget.model.repository.updateSpace(
               widget.space!.id,
               label.text,
@@ -784,19 +788,33 @@ class _ParkingEditorState extends State<ParkingEditor> {
     }
   }
 
-  /// Saves changed "where is it" notes on the space, then publishes.
+  /// One action: adds the space if it is new (or saves changed "where is
+  /// it" notes on an existing one), then publishes when it is free.
   Future<void> _publish() async {
     final repo = widget.model.repository;
-    final space = widget.space!;
-    if (_spaceDetailsChanged) {
-      await repo.updateSpace(space.id, space.label, level.text, notes.text);
+    final space = chosen;
+    final String id;
+    if (space != null) {
+      id = space.id;
+      if (_spaceDetailsChanged) {
+        await repo.updateSpace(id, space.label, level.text, notes.text);
+      }
+    } else {
+      id = createdId ??= await repo.addSpace(
+        widget.model.buildingId,
+        label.text,
+        level.text,
+        notes.text,
+      );
     }
     if (regular) {
-      await repo.publishSeries(space.id, _windows());
+      await repo.publishSeries(id, _windows());
     } else {
-      await repo.publish(space.id, start, end);
+      await repo.publish(id, start, end);
     }
   }
+
+  String get _spaceName => chosen?.label ?? label.text.trim();
 
   Widget _step(int n, String title) => Padding(
     padding: const EdgeInsets.only(bottom: Space.s),
@@ -812,7 +830,9 @@ class _ParkingEditorState extends State<ParkingEditor> {
           ),
         ),
         const SizedBox(width: Space.s),
-        Text(title, style: Theme.of(context).textTheme.titleMedium),
+        Expanded(
+          child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+        ),
       ],
     ),
   );
@@ -828,18 +848,16 @@ class _ParkingEditorState extends State<ParkingEditor> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              widget.space == null
-                  ? 'החניה של הבית'
-                  : widget.details
+              widget.details
                   ? 'פרטי חניה ${widget.space!.label}'
-                  : 'משתפים את חניה ${widget.space!.label}',
+                  : 'שיתוף החניה שלי',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: Space.s),
             Text(
-              widget.space == null
-                  ? 'החניה תשויך לדירה ${widget.apartment}. כל בני הבית יוכלו לנהל את השיתוף.'
-                  : 'בוחרים מתי, מוסיפים איפה, ומפרסמים. השכנים יראו את החניה בלשונית ״פנויות״.',
+              widget.details
+                  ? 'החניה שייכת לדירה ${widget.apartment}. כל בני הבית יכולים לשתף אותה.'
+                  : 'שלושה צעדים קצרים, ושכן יוכל להזמין בלחיצה.',
               style: TextStyle(color: context.glass.muted),
             ),
             const SizedBox(height: Space.xxl),
@@ -881,7 +899,50 @@ class _ParkingEditorState extends State<ParkingEditor> {
                 ),
               ),
             ] else ...[
-              _step(1, 'מתי החניה פנויה?'),
+              _step(1, 'איזו חניה?'),
+              if (spaces.isNotEmpty && createdId == null)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final s in spaces)
+                      ChoiceChip(
+                        key: ValueKey('parking-pick-${s.id}'),
+                        selected: chosen?.id == s.id,
+                        onSelected: saving ? null : (_) => _choose(s),
+                        label: Text('חניה ${s.label}'),
+                      ),
+                    ChoiceChip(
+                      key: const Key('parking-pick-new'),
+                      selected: chosen == null,
+                      onSelected: saving ? null : (_) => _choose(null),
+                      label: const Text('חניה אחרת'),
+                    ),
+                  ],
+                ),
+              if (chosen == null) ...[
+                if (spaces.isNotEmpty) const SizedBox(height: Space.m),
+                TextFormField(
+                  key: const Key('parking-label'),
+                  controller: label,
+                  enabled: !saving && createdId == null,
+                  maxLength: 20,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'מספר החניה',
+                    hintText: 'למשל 42 או א׳־12',
+                  ),
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'יש להזין את מספר החניה'
+                      : null,
+                ),
+                Text(
+                  'נשמור אותה לדירה ${widget.apartment}, ובפעם הבאה רק בוחרים מתי.',
+                  style: TextStyle(color: context.glass.muted, fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: Space.xxl),
+              _step(2, 'מתי היא פנויה?'),
               SegmentedButton<bool>(
                 key: const Key('parking-mode'),
                 showSelectedIcon: false,
@@ -1015,7 +1076,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
                 ),
               ],
               const SizedBox(height: Space.xxl),
-              _step(2, 'איפה היא? (לא חובה)'),
+              _step(3, 'איפה היא? (לא חובה)'),
               TextFormField(
                 key: const Key('parking-level'),
                 controller: level,
@@ -1053,7 +1114,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
                     const SizedBox(width: Space.s),
                     Expanded(
                       child: Text(
-                        'חניה ${widget.space!.label}: $_summary\nבחינם, וכל שכן יכול להזמין בלחיצה.',
+                        '${_spaceName.isEmpty ? 'החניה' : 'חניה $_spaceName'}: $_summary\nבחינם, וכל שכן יכול להזמין בלחיצה.',
                         style: const TextStyle(height: 1.6),
                       ),
                     ),
@@ -1076,8 +1137,6 @@ class _ParkingEditorState extends State<ParkingEditor> {
               child: Text(
                 saving
                     ? 'שומרים…'
-                    : widget.space == null
-                    ? 'הוספת החניה'
                     : widget.details
                     ? 'שמירת הפרטים'
                     : 'פרסום לשכנים',
@@ -1132,7 +1191,7 @@ class _ParkingPreviewRepository implements ParkingRepository {
     ],
   );
   @override
-  Future<void> addSpace(String b, String l, String level, String notes) async =>
+  Future<String> addSpace(String b, String l, String level, String n) async =>
       throw StateError('תצוגת עיצוב בלבד');
   @override
   Future<void> publish(String id, DateTime start, DateTime end) async =>

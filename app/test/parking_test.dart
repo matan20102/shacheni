@@ -48,13 +48,24 @@ Future<String> share(
   return (await owner.load('b')).offers.last.id;
 }
 
+/// Leaves the text fields (a focused field keeps scrolling itself back into
+/// view) and taps the editor's save button.
+Future<void> tapSave(WidgetTester tester) async {
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pumpAndSettle();
+  final save = find.byKey(const Key('parking-save'));
+  await tester.ensureVisible(save);
+  await tester.pumpAndSettle();
+  await tester.tap(save);
+}
+
 class SlowParking extends LocalParkingRepository {
   SlowParking() : super(apartmentFor: (_) => '12');
   final saved = Completer<void>();
   int writes = 0;
   bool fail = true;
   @override
-  Future<void> addSpace(
+  Future<String> addSpace(
     String b,
     String label,
     String level,
@@ -65,7 +76,17 @@ class SlowParking extends LocalParkingRepository {
       await saved.future;
       throw StateError('שמירה נכשלה');
     }
-    await super.addSpace(b, label, level, notes);
+    return super.addSpace(b, label, level, notes);
+  }
+}
+
+class FailingPublish extends LocalParkingRepository {
+  FailingPublish() : super(apartmentFor: (_) => '12');
+  bool fail = true;
+  @override
+  Future<void> publish(String spaceId, DateTime start, DateTime end) async {
+    if (fail) throw StateError('פרסום נכשל');
+    await super.publish(spaceId, start, end);
   }
 }
 
@@ -147,6 +168,8 @@ void main() {
           return http.Response(
             r.url.path.endsWith('ba_parking')
                 ? '{"spaces":[],"offers":[]}'
+                : r.url.path.endsWith('ba_parking_add')
+                ? '"space-1"'
                 : 'null',
             200,
             headers: {'content-type': 'application/json'},
@@ -157,7 +180,7 @@ void main() {
       addTearDown(client.dispose);
       final repo = SupabaseParkingRepository(client);
       await repo.load('b');
-      await repo.addSpace('b', '42', '-1', 'lift');
+      expect(await repo.addSpace('b', '42', '-1', 'lift'), 'space-1');
       final start = DateTime(2026, 10, 19, 10);
       await repo.publish('s', start, start.add(const Duration(hours: 2)));
       await repo.book('o');
@@ -198,7 +221,7 @@ void main() {
     vm.dispose();
   });
 
-  testWidgets('phone adds a household space and publishes availability', (
+  testWidgets('one button adds the space and shares it in the same step', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
@@ -206,27 +229,62 @@ void main() {
     final repo = LocalParkingRepository(apartmentFor: (_) => '12');
     await tester.pumpWidget(parkingHarness(repo));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('parking-add')));
+    await tester.tap(find.byKey(const Key('parking-share')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('parking-save')));
-    await tester.tap(find.byKey(const Key('parking-save')));
+    expect(find.text('שיתוף החניה שלי'), findsWidgets);
+    await tapSave(tester);
     await tester.pumpAndSettle();
-    expect(find.text('יש להזין סימון חניה'), findsOneWidget);
+    expect(find.text('יש להזין את מספר החניה'), findsOneWidget);
     await tester.enterText(find.byKey(const Key('parking-label')), '42');
     await tester.enterText(find.byKey(const Key('parking-level')), '-1');
-    await tester.ensureVisible(find.byKey(const Key('parking-save')));
-    await tester.tap(find.byKey(const Key('parking-save')));
+    await tapSave(tester);
     await tester.pumpAndSettle();
-    final space = (await repo.load('b')).spaces.single;
-    final button = find.byKey(ValueKey('parking-share-${space.id}'));
-    await tester.ensureVisible(button);
-    await tester.tap(button);
+    var snapshot = await repo.load('b');
+    final space = snapshot.spaces.single;
+    expect(space.label, '42');
+    expect(space.level, '-1');
+    expect(snapshot.offers.single.ownSpace, isTrue);
+    expect(find.text('החניה פורסמה לשכנים'), findsOneWidget);
+
+    // Next time the saved space is already picked: only "when" is needed.
+    await tester.tap(find.byKey(const Key('parking-share')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('parking-save')));
-    await tester.tap(find.byKey(const Key('parking-save')));
+    expect(find.byKey(const Key('parking-label')), findsNothing);
+    final picked = tester.widget<ChoiceChip>(
+      find.byKey(ValueKey('parking-pick-${space.id}')),
+    );
+    expect(picked.selected, isTrue);
+    await tester.tap(find.text('בימים קבועים'));
     await tester.pumpAndSettle();
-    expect((await repo.load('b')).offers.single.ownSpace, isTrue);
+    await tapSave(tester);
+    await tester.pumpAndSettle();
+    snapshot = await repo.load('b');
+    expect(snapshot.spaces, hasLength(1));
+    expect(snapshot.offers.length, greaterThan(1));
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a retry after a failed publish does not add the space twice', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repo = FailingPublish();
+    await tester.pumpWidget(parkingHarness(repo));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('parking-share')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('parking-label')), '42');
+    await tapSave(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('פרסום נכשל'), findsWidgets);
+    repo.fail = false;
+    await tapSave(tester);
+    await tester.pumpAndSettle();
+    final snapshot = await repo.load('b');
+    expect(snapshot.spaces, hasLength(1));
+    expect(snapshot.offers, hasLength(1));
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -300,8 +358,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.textContaining('בכל יום'), findsOneWidget);
-    await tester.ensureVisible(find.byKey(const Key('parking-save')));
-    await tester.tap(find.byKey(const Key('parking-save')));
+    await tapSave(tester);
     await tester.pumpAndSettle();
     final snapshot = await repo.load('b');
     final expected = regularParkingWindows(
@@ -396,12 +453,11 @@ void main() {
     final repo = SlowParking();
     await tester.pumpWidget(parkingHarness(repo));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('parking-add')));
+    await tester.tap(find.byKey(const Key('parking-share')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('parking-label')), '42');
     final save = find.byKey(const Key('parking-save'));
-    await tester.ensureVisible(save);
-    await tester.tap(save);
+    await tapSave(tester);
     await tester.pump();
     expect(tester.widget<FilledButton>(save).onPressed, isNull);
     expect(repo.writes, 1);
@@ -448,7 +504,7 @@ void main() {
       final repo = LocalParkingRepository(apartmentFor: (_) => '12');
       await tester.pumpWidget(parkingHarness(repo, scale: 1.5));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('parking-add')));
+      await tester.tap(find.byKey(const Key('parking-share')));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.byKey(const Key('parking-save')));
       await tester.pumpAndSettle();

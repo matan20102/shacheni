@@ -70,7 +70,7 @@ class LocalParkingRepository implements ParkingRepository {
   }
 
   @override
-  Future<void> addSpace(
+  Future<String> addSpace(
     String buildingId,
     String label,
     String level,
@@ -95,6 +95,7 @@ class LocalParkingRepository implements ParkingRepository {
         notes: notes.trim(),
       ),
     );
+    return id;
   }
 
   bool _labelTaken(String buildingId, String label, {String? except}) =>

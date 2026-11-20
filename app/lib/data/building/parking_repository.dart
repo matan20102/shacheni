@@ -91,7 +91,9 @@ class ParkingSnapshot {
 
 abstract interface class ParkingRepository {
   Future<ParkingSnapshot> load(String buildingId);
-  Future<void> addSpace(
+
+  /// Adds a space to the caller's apartment and returns its id.
+  Future<String> addSpace(
     String buildingId,
     String label,
     String level,
@@ -123,22 +125,20 @@ class SupabaseParkingRepository implements ParkingRepository {
             as Map<String, dynamic>,
       );
   @override
-  Future<void> addSpace(
+  Future<String> addSpace(
     String buildingId,
     String label,
     String level,
     String notes,
-  ) async {
-    await client.rpc(
-      'ba_parking_add',
-      params: {
-        'p_building': buildingId,
-        'p_label': label,
-        'p_level': level,
-        'p_notes': notes,
-      },
-    );
-  }
+  ) async => await client.rpc(
+    'ba_parking_add',
+    params: {
+      'p_building': buildingId,
+      'p_label': label,
+      'p_level': level,
+      'p_notes': notes,
+    },
+  ) as String;
 
   @override
   Future<void> publish(String spaceId, DateTime start, DateTime end) async {
@@ -254,6 +254,7 @@ class ParkingViewModel extends ChangeNotifier {
     }
     _notify();
   }
+
   String? error;
   int _generation = 0;
   void _notify() {
