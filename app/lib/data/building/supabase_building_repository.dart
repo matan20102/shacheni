@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -127,6 +129,9 @@ class SupabaseBuildingRepository implements BuildingRepository {
         e.key: (e.value as num).toInt(),
     }),
     myReactions: Set.unmodifiable((j['my_reactions'] as List).cast<String>()),
+    images: List.unmodifiable(
+      (j['images'] as List? ?? const []).cast<String>(),
+    ),
   );
 
   @override
@@ -320,6 +325,80 @@ class SupabaseBuildingRepository implements BuildingRepository {
   @override
   Future<void> withdraw(String id) async {
     await client.rpc('ba_withdraw', params: {'p_member': id});
+  }
+
+  static const imageBucket = 'board-images';
+  final _random = Random.secure();
+
+  // A random version-4 UUID for a new photo's file name.
+  String _uuid() {
+    final b = List<int>.generate(16, (_) => _random.nextInt(256));
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    final h = b.map((x) => x.toRadixString(16).padLeft(2, '0')).join();
+    return '${h.substring(0, 8)}-${h.substring(8, 12)}-${h.substring(12, 16)}-'
+        '${h.substring(16, 20)}-${h.substring(20)}';
+  }
+
+  @override
+  Future<void> publishWithImages(
+    BuildingHome home,
+    String text,
+    PostKind kind,
+    List<PostImage> images,
+  ) async {
+    if (images.isEmpty) return publish(home, text, kind);
+    final user = client.auth.currentUser?.id;
+    if (user == null) throw StateError('יש להתחבר מחדש');
+    final bucket = client.storage.from(imageBucket);
+    final paths = <String>[];
+    try {
+      for (final image in images) {
+        final path = '${home.id}/$user/${_uuid()}.${image.extension}';
+        await bucket.uploadBinary(
+          path,
+          image.bytes,
+          fileOptions: FileOptions(contentType: image.mimeType),
+        );
+        paths.add(path);
+      }
+      await client.rpc(
+        'ba_publish_v2',
+        params: {
+          'p_building': home.id,
+          'p_body': text.trim(),
+          'p_kind': kind.name,
+          'p_images': paths,
+        },
+      );
+    } catch (_) {
+      // Do not leave photos behind for a post that was not published.
+      if (paths.isNotEmpty) {
+        try {
+          await bucket.remove(paths);
+        } catch (_) {
+          /* The photos stay unused; the original error matters more. */
+        }
+      }
+      rethrow;
+    }
+  }
+
+  // Recently shown photos, so scrolling and refreshes do not download again.
+  final _imageCache = <String, Future<Uint8List>>{};
+
+  @override
+  Future<Uint8List> postImage(String path) {
+    final cached = _imageCache.remove(path);
+    if (cached != null) return _imageCache[path] = cached;
+    if (_imageCache.length >= 60) _imageCache.remove(_imageCache.keys.first);
+    final download = client.storage.from(imageBucket).download(path);
+    _imageCache[path] = download;
+    // A failed download is tried again the next time the photo is shown.
+    unawaited(
+      download.then((_) {}, onError: (Object _) => _imageCache.remove(path)),
+    );
+    return download;
   }
 
   @override
