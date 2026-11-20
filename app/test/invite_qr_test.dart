@@ -46,16 +46,15 @@ void main() {
     expect(find.text(inviteLink(home.code)), findsOneWidget);
   });
 
-  testWidgets('ordinary resident does not get an invitation QR', (
-    tester,
-  ) async {
+  testWidgets('ordinary resident also gets the invitation QR', (tester) async {
     final vm = BuildingViewModel(LocalBuildingRepository())..enter();
     await vm.select('olive');
     addTearDown(vm.dispose);
     await tester.pumpWidget(harness(vm));
     await tester.pumpAndSettle();
     await directory(tester, buildingId: 'olive');
-    expect(find.byType(InviteQrPanel), findsNothing);
+    expect(vm.active!.isAdmin, isFalse);
+    expect(find.byType(InviteQrPanel), findsOneWidget);
   });
 
   testWidgets('building picker offers the lobby QR to admins', (tester) async {
@@ -72,5 +71,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(InvitePoster), findsOneWidget);
     expect(find.textContaining(vm.active!.name), findsWidgets);
+  });
+
+  testWidgets('residents can invite but only admins can change the code', (
+    tester,
+  ) async {
+    final vm = BuildingViewModel(LocalBuildingRepository())..enter();
+    await vm.select('olive');
+    addTearDown(vm.dispose);
+    await tester.pumpWidget(harness(vm));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('building-selector')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('building-invite-qr')), findsOneWidget);
+    expect(find.byKey(const Key('building-code-rotate')), findsNothing);
   });
 }

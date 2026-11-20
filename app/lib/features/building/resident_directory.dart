@@ -60,7 +60,7 @@ class BuildingManagementSheet extends StatelessWidget {
                 ],
               ),
             ),
-            if (home.isAdmin) ...[
+            if (home.code.isNotEmpty) ...[
               const SizedBox(height: 16),
               InviteQrPanel(
                 key: ValueKey('invite-qr-$buildingId'),
