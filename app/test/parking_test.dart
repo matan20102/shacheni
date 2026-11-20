@@ -230,6 +230,49 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('weekly sharing repeats the same weekday for chosen weeks', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repo = LocalParkingRepository(apartmentFor: (_) => '12');
+    await repo.addSpace('b', '42', '-1', '');
+    await tester.pumpWidget(parkingHarness(repo));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('החניות שלנו'));
+    await tester.pumpAndSettle();
+    final space = (await repo.load('b')).spaces.single;
+    final button = find.byKey(ValueKey('parking-share-${space.id}'));
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    final weekly = find.byKey(const ValueKey('parking-repeat-3'));
+    await tester.ensureVisible(weekly);
+    await tester.tap(weekly);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('parking-weeks-4')), findsOneWidget);
+    final eight = find.byKey(const ValueKey('parking-weeks-8'));
+    await tester.ensureVisible(eight);
+    await tester.tap(eight);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('parking-save')));
+    await tester.tap(find.byKey(const Key('parking-save')));
+    await tester.pumpAndSettle();
+    final offers = (await repo.load('b')).offers.toList()
+      ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+    expect(offers, hasLength(8));
+    for (final o in offers) {
+      expect(o.startsAt.weekday, offers.first.startsAt.weekday);
+      expect(o.startsAt.hour, offers.first.startsAt.hour);
+      expect(
+        o.endsAt.difference(o.startsAt),
+        offers.first.endsAt.difference(offers.first.startsAt),
+      );
+    }
+    expect(offers.last.startsAt.difference(offers.first.startsAt).inDays, 49);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('booking confirmation and cancellation update orders', (
     tester,
   ) async {
