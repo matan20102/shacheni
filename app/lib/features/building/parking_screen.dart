@@ -516,13 +516,31 @@ class _ParkingEditorState extends State<ParkingEditor> {
       notes = TextEditingController(text: widget.space?.notes ?? '');
   bool get describing => widget.space == null || widget.details;
 
-  /// 0 once, 1 every day for a week, 2 Sunday to Thursday for two weeks.
+  /// 0 once, 1 every day for a week, 2 Sunday to Thursday for two weeks,
+  /// 3 the same weekday every week for [weeks] weeks.
   int repeat = 0;
+  int weeks = 4;
+  static const weekChoices = [4, 8, 12];
+  static const _dayNames = {
+    DateTime.sunday: 'ראשון',
+    DateTime.monday: 'שני',
+    DateTime.tuesday: 'שלישי',
+    DateTime.wednesday: 'רביעי',
+    DateTime.thursday: 'חמישי',
+    DateTime.friday: 'שישי',
+    DateTime.saturday: 'שבת',
+  };
 
   // Calendar days, not 24-hour steps, so a clock change keeps the same hour.
   List<ParkingWindow> _windows() {
     DateTime shift(DateTime t, int days) =>
         DateTime(t.year, t.month, t.day + days, t.hour, t.minute);
+    if (repeat == 3) {
+      return [
+        for (var i = 0; i < weeks; i++)
+          (start: shift(start, 7 * i), end: shift(end, 7 * i)),
+      ];
+    }
     return [
       for (var i = 0; i < const [1, 7, 14][repeat]; i++)
         if (repeat != 2 ||
@@ -737,7 +755,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  for (var i = 0; i < 3; i++)
+                  for (var i = 0; i < 4; i++)
                     ChoiceChip(
                       key: ValueKey('parking-repeat-$i'),
                       selected: repeat == i,
@@ -745,11 +763,38 @@ class _ParkingEditorState extends State<ParkingEditor> {
                           ? null
                           : (_) => setState(() => repeat = i),
                       label: Text(
-                        ['פעם אחת', 'כל יום, שבוע', 'א׳–ה׳, שבועיים'][i],
+                        [
+                          'פעם אחת',
+                          'כל יום, שבוע',
+                          'א׳–ה׳, שבועיים',
+                          'כל שבוע',
+                        ][i],
                       ),
                     ),
                 ],
               ),
+              if (repeat == 3) ...[
+                const SizedBox(height: Space.s),
+                Text(
+                  'כל יום ${_dayNames[start.weekday]}, לכמה שבועות?',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: Space.xs),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final n in weekChoices)
+                      ChoiceChip(
+                        key: ValueKey('parking-weeks-$n'),
+                        selected: weeks == n,
+                        onSelected: saving
+                            ? null
+                            : (_) => setState(() => weeks = n),
+                        label: Text('$n שבועות'),
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: Space.m),
               const SoftTag(
                 'שיתוף בחינם · הזמנה לכל הטווח',
