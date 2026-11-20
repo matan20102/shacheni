@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Light-theme values, kept for code that has no [BuildContext] (e.g. the
 /// printable lobby notice, which is always on white). Widgets inside the app
@@ -12,7 +13,8 @@ const glassError = Color(0xFFB53A40);
 
 /// Spacing scale: every gap and padding comes from these steps.
 abstract final class Space {
-  static const xs = 4.0, s = 8.0, m = 12.0, l = 16.0, xl = 20.0, xxl = 28.0;
+  static const xs = 4.0, s = 8.0, m = 12.0, l = 16.0, xl = 20.0, xxl = 24.0;
+  static const xxxl = 32.0;
 }
 
 /// Corner radii for the glass surfaces.
@@ -675,7 +677,7 @@ class SoftTag extends StatelessWidget {
         children: [
           if (icon != null) ...[
             Icon(icon, size: 13, color: color),
-            const SizedBox(width: 4),
+            const SizedBox(width: Space.xs),
           ],
           Flexible(
             child: Text(
@@ -691,4 +693,221 @@ class SoftTag extends StatelessWidget {
       ),
     );
   }
+}
+
+/// True when the device asks for fewer animations.
+extension MotionContext on BuildContext {
+  bool get calmMotion => MediaQuery.maybeDisableAnimationsOf(this) ?? false;
+}
+
+/// Gives a card a gentle press-in (and a light tap feel on phones).
+class Pressable extends StatefulWidget {
+  const Pressable({super.key, required this.child, this.haptic = true});
+  final Widget child;
+  final bool haptic;
+  @override
+  State<Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<Pressable> {
+  bool down = false;
+  void _set(bool value) {
+    if (down != value) setState(() => down = value);
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    behavior: HitTestBehavior.translucent,
+    onPointerDown: (_) {
+      _set(true);
+      if (widget.haptic) HapticFeedback.selectionClick();
+    },
+    onPointerUp: (_) => _set(false),
+    onPointerCancel: (_) => _set(false),
+    child: AnimatedScale(
+      scale: down && !context.calmMotion ? .97 : 1,
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOut,
+      child: widget.child,
+    ),
+  );
+}
+
+/// New screen content fades and rises in slightly. Only the incoming screen
+/// animates, so nothing is kept alive twice.
+class EnterTransition extends StatelessWidget {
+  const EnterTransition({super.key, required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) {
+    if (context.calmMotion) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      child: child,
+      builder: (context, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(
+          offset: Offset(0, 12 * (1 - t)),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Soft fade at the top edge of scrolling content, so it melts under the
+/// header instead of being cut by a hard line.
+class TopFade extends StatelessWidget {
+  const TopFade({super.key, required this.child, this.height = 18});
+  final Widget child;
+  final double height;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.glass.gradient.first;
+    return Stack(
+      children: [
+        Positioned.fill(child: child),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: height,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [c.withValues(alpha: .9), c.withValues(alpha: 0)],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Placeholder shapes in the layout of the home screen, gently pulsing,
+/// shown while the building loads.
+class SkeletonPage extends StatefulWidget {
+  const SkeletonPage({super.key, this.label = 'טוענים…'});
+  final String label;
+  @override
+  State<SkeletonPage> createState() => _SkeletonPageState();
+}
+
+class _SkeletonPageState extends State<SkeletonPage>
+    with SingleTickerProviderStateMixin {
+  late final pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (context.calmMotion) {
+      pulse
+        ..stop()
+        ..value = .5;
+    } else if (!pulse.isAnimating) {
+      pulse.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    pulse.dispose();
+    super.dispose();
+  }
+
+  Widget _bar(double width, double height, {double radius = 10}) =>
+      FadeTransition(
+        opacity: Tween(begin: .45, end: 1.0).animate(pulse),
+        child: Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: context.glass.chip,
+            borderRadius: BorderRadius.circular(radius),
+          ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: widget.label,
+    liveRegion: true,
+    child: ExcludeSemantics(
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: ListView(
+              key: const Key('skeleton-page'),
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(Space.xl),
+              children: [
+                GlassPanel(
+                  radius: Corners.card,
+                  padding: const EdgeInsets.all(Space.l),
+                  child: Row(
+                    children: [
+                      _bar(28, 28, radius: 14),
+                      const SizedBox(width: Space.m),
+                      _bar(140, 14),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: Space.xxl),
+                _bar(90, 12),
+                const SizedBox(height: Space.s),
+                _bar(220, 30),
+                const SizedBox(height: Space.xxl),
+                GlassPanel(
+                  tone: GlassTone.accent,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _bar(70, 12),
+                      const SizedBox(height: Space.m),
+                      _bar(160, 26),
+                      const SizedBox(height: Space.m),
+                      _bar(110, 12),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: Space.xxl),
+                Row(
+                  children: [
+                    for (var i = 0; i < 2; i++) ...[
+                      if (i > 0) const SizedBox(width: Space.m),
+                      Expanded(
+                        child: GlassPanel(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _bar(28, 28, radius: 8),
+                              const SizedBox(height: Space.l),
+                              _bar(90, 14),
+                              const SizedBox(height: Space.s),
+                              _bar(120, 10),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }

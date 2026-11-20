@@ -96,7 +96,7 @@ class _BoardSearchState extends State<BoardSearch> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('חיפוש בלוח', style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 12),
+          const SizedBox(height: Space.m),
           TextField(
             key: const Key('board-search-query'),
             controller: query,
@@ -110,7 +110,7 @@ class _BoardSearchState extends State<BoardSearch> {
               counterText: '',
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Space.m),
           if (loading) const LinearProgressIndicator(minHeight: 2),
           if (error != null)
             Padding(
@@ -162,7 +162,7 @@ class _BoardSearchState extends State<BoardSearch> {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: Space.s),
                           Text(post.text),
                           for (final reply in post.replies)
                             Padding(

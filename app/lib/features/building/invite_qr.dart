@@ -42,12 +42,12 @@ class InviteQrPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('הזמנה בסריקה', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 4),
+        const SizedBox(height: Space.xs),
         Text(
           'שכנים שסורקים את הקוד מגיעים ישר לבקשת הצטרפות. הגישה נפתחת רק אחרי אישור.',
           style: TextStyle(fontSize: 12, color: context.glass.muted),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: Space.l),
         Center(
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -58,7 +58,7 @@ class InviteQrPanel extends StatelessWidget {
             child: InviteQrCode(code: code),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: Space.m),
         Center(
           child: TextButton.icon(
             key: const Key('invite-qr-poster'),
@@ -135,21 +135,21 @@ class InvitePoster extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headlineMedium,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: Space.s),
                         Text(
                           'הצטרפו ל״$name״ ב$appNameHebrew: לוח הבניין, בקשות בין שכנים ושיתוף חניות.',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: Space.xxl),
                         InviteQrCode(code: code, size: qr),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: Space.xl),
                         const Text(
                           'סורקים במצלמה של הטלפון ושולחים בקשת הצטרפות',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 15, color: glassInk),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: Space.xl),
                         const Text(
                           'או מזינים באפליקציה את קוד הבניין',
                           style: TextStyle(fontSize: 13, color: glassMuted),
@@ -164,7 +164,7 @@ class InvitePoster extends StatelessWidget {
                             color: glassTeal,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: Space.s),
                         Directionality(
                           textDirection: TextDirection.ltr,
                           child: SelectableText(

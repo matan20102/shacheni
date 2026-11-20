@@ -134,7 +134,7 @@ class _ParkingScreenState extends State<ParkingScreen>
             Text(
               'מ־${parkingTime(offer.startsAt)}\nעד ${parkingTime(offer.endsAt)}',
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Space.m),
             Text(
               cancel
                   ? (offer.ownSpace
@@ -196,17 +196,17 @@ class _ParkingScreenState extends State<ParkingScreen>
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
           children: [
             const Eyebrow('מפנים מקום לשכנים'),
-            const SizedBox(height: 4),
+            const SizedBox(height: Space.xs),
             Text(
               'החניון שלנו',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Space.s),
             Text(
               'חניה פנויה אצלך? לשכן זה יכול לעשות את היום.',
               style: TextStyle(color: context.glass.muted),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Space.m),
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: TextButton.icon(
@@ -216,7 +216,7 @@ class _ParkingScreenState extends State<ParkingScreen>
                 label: const Text('הוספת חניה לדירה'),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: Space.m),
             Wrap(
               spacing: 8,
               runSpacing: 4,
@@ -235,7 +235,7 @@ class _ParkingScreenState extends State<ParkingScreen>
                   ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: Space.xl),
             if (model.loading || model.saving)
               const Padding(
                 padding: EdgeInsets.only(bottom: 12),
@@ -270,7 +270,7 @@ class _ParkingScreenState extends State<ParkingScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _spaceTitle(space, 'של דירה ${widget.apartment}'),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: Space.m),
                         OutlinedButton.icon(
                           key: ValueKey('parking-share-${space.id}'),
                           onPressed: model.saving ? null : () => _editor(space),
@@ -318,11 +318,11 @@ class _ParkingScreenState extends State<ParkingScreen>
                               ? 'החניה שלנו'
                               : 'של דירה ${past.apartment}',
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: Space.s),
                         Text(
                           'מ־${parkingTime(past.startsAt)} עד ${parkingTime(past.endsAt)}',
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: Space.xs),
                         Text(
                           _historyStatus(past),
                           style: TextStyle(
@@ -354,7 +354,7 @@ class _ParkingScreenState extends State<ParkingScreen>
                       color: context.glass.accent,
                       size: 34,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Space.m),
                     Text(
                       [
                         'עדיין אין חניות פנויות',
@@ -364,7 +364,7 @@ class _ParkingScreenState extends State<ParkingScreen>
                       ][section],
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: Space.s),
                     Text(
                       [
                         'כששכן ישתף חניה, אפשר יהיה להזמין אותה כאן.',
@@ -401,7 +401,7 @@ class _ParkingScreenState extends State<ParkingScreen>
         ),
         child: Icon(Icons.local_parking_rounded, color: context.glass.accent),
       ),
-      const SizedBox(width: 12),
+      const SizedBox(width: Space.m),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,7 +426,7 @@ class _ParkingScreenState extends State<ParkingScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _spaceTitle(o.space, 'דירה ${o.apartment}'),
-        const SizedBox(height: 14),
+        const SizedBox(height: Space.l),
         Text(
           'מ־${parkingTime(o.startsAt)}\nעד ${parkingTime(o.endsAt)}',
           style: const TextStyle(fontWeight: FontWeight.w600, height: 1.7),
@@ -439,7 +439,7 @@ class _ParkingScreenState extends State<ParkingScreen>
               style: TextStyle(color: context.glass.muted),
             ),
           ),
-        const SizedBox(height: 12),
+        const SizedBox(height: Space.m),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -673,14 +673,14 @@ class _ParkingEditorState extends State<ParkingEditor> {
                   : 'משתפים את חניה ${widget.space!.label}',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Space.s),
             Text(
               widget.space == null
                   ? 'החניה תשויך לדירה ${widget.apartment}. כל בני הבית יוכלו לנהל את השיתוף.'
                   : 'השכנים יוכלו להזמין בחינם את כל הטווח שפרסמת, ללא אישור נוסף.',
               style: TextStyle(color: context.glass.muted),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: Space.xxl),
             if (describing) ...[
               TextFormField(
                 key: const Key('parking-label'),
@@ -695,7 +695,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
                     ? 'יש להזין סימון חניה'
                     : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Space.m),
               TextFormField(
                 key: const Key('parking-level'),
                 controller: level,
@@ -706,7 +706,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
                   hintText: 'למשל ‎-1',
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Space.m),
               TextFormField(
                 key: const Key('parking-notes'),
                 controller: notes,
@@ -725,14 +725,14 @@ class _ParkingEditorState extends State<ParkingEditor> {
                 icon: const Icon(Icons.event_available_outlined),
                 label: Text('פנויה מ־${parkingTime(start)}'),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Space.m),
               OutlinedButton.icon(
                 key: const Key('parking-end'),
                 onPressed: saving ? null : () => _pick(false),
                 icon: const Icon(Icons.schedule_rounded),
                 label: Text('עד ${parkingTime(end)}'),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Space.m),
               Wrap(
                 spacing: 8,
                 runSpacing: 4,
@@ -750,7 +750,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Space.m),
               const SoftTag(
                 'שיתוף בחינם · הזמנה לכל הטווח',
                 icon: Icons.favorite_border_rounded,
@@ -764,7 +764,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
                   style: TextStyle(color: context.glass.error),
                 ),
               ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Space.xxl),
             FilledButton(
               key: const Key('parking-save'),
               onPressed: saving ? null : _save,

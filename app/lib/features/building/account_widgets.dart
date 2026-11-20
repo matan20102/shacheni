@@ -175,19 +175,19 @@ class _ProfileEditorState extends State<ProfileEditor> {
             'הפרופיל שלי',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Space.s),
           Text(
             'ככה השכנים יכירו אותך.',
             style: TextStyle(color: context.glass.muted),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: Space.xxl),
           if (widget.profile.email.isNotEmpty) ...[
             GlassPanel(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   Icon(Icons.mail_outline, color: context.glass.accent),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: Space.m),
                   Expanded(
                     child: Text(
                       widget.profile.email,
@@ -197,7 +197,7 @@ class _ProfileEditorState extends State<ProfileEditor> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Space.l),
           ],
           TextFormField(
             key: const Key('profile-name'),
@@ -210,7 +210,7 @@ class _ProfileEditorState extends State<ProfileEditor> {
                 ? 'יש להזין שם באורך שני תווים לפחות'
                 : null,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Space.s),
           TextFormField(
             key: const Key('profile-phone'),
             controller: phone,
@@ -239,7 +239,7 @@ class _ProfileEditorState extends State<ProfileEditor> {
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Space.m),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -249,7 +249,7 @@ class _ProfileEditorState extends State<ProfileEditor> {
             ),
           ),
           if (widget.onDelete != null) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: Space.xl),
             const Divider(),
             TextButton.icon(
               key: const Key('account-delete'),

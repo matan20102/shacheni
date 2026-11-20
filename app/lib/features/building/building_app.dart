@@ -136,6 +136,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
   }
 
   void _navigate(int value) {
+    if (value != vm.tab) HapticFeedback.selectionClick();
     navCompact.value = false;
     vm.navigate(value);
     if (vm.live) _sync();
@@ -175,12 +176,12 @@ class _BuildingExperienceState extends State<BuildingExperience>
               ),
               const SizedBox(height: 64),
               const Center(child: BuildingMark(size: 130)),
-              const SizedBox(height: 32),
+              const SizedBox(height: Space.xxxl),
               Text(
                 'בית אחד.\nהרבה שכנים טובים.',
                 style: Theme.of(context).textTheme.headlineLarge,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Space.l),
               Text(
                 'כל מה שקורה בבניין, במקום אחד פשוט.\nלהתעדכן, לעזור ולנהל את הבית יחד.',
                 style: TextStyle(
@@ -189,7 +190,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
                   color: context.glass.muted,
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: Space.xxxl),
               const GlassPanel(
                 child: Column(
                   children: [
@@ -198,13 +199,13 @@ class _BuildingExperienceState extends State<BuildingExperience>
                       'לוח אחד לכל הבניין',
                       'עדכונים קטנים, עזרה גדולה',
                     ),
-                    SizedBox(height: 18),
+                    SizedBox(height: Space.xl),
                     _FeatureLine(
                       Icons.home_outlined,
                       'הבית שלך במרכז',
                       'מידע ופניות הנוגעים לדירה שלך',
                     ),
-                    SizedBox(height: 18),
+                    SizedBox(height: Space.xl),
                     _FeatureLine(
                       Icons.people_outline,
                       'מנהלים יחד',
@@ -213,13 +214,13 @@ class _BuildingExperienceState extends State<BuildingExperience>
                   ],
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: Space.xxl),
               FilledButton.icon(
                 onPressed: vm.enter,
                 icon: const Icon(Icons.arrow_forward_rounded),
                 label: const Text('כניסה לבניין לדוגמה'),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Space.m),
               Text(
                 'נתוני הדגמה בלבד · השינויים נשמרים עד סגירת האפליקציה.\nכניסה עם Google זמינה כרגע בגרסה המחוברת הקיימת.',
                 textAlign: TextAlign.center,
@@ -260,33 +261,38 @@ class _BuildingExperienceState extends State<BuildingExperience>
           Expanded(
             child: NotificationListener<UserScrollNotification>(
               onNotification: _onScroll,
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
-                  child: switch (vm.tab) {
-                    0 => _home(),
-                    1 => _board(),
-                    2 =>
-                      vm.active == null
-                          ? _later(
-                              'חניה',
-                              'מקום קטן. עזרה גדולה.',
-                              Icons.local_parking_rounded,
-                              'מצטרפים לבניין כדי לשתף ולהזמין חניות עם השכנים.',
-                            )
-                          : ParkingScreen(
-                              key: ValueKey('parking-${vm.active!.id}'),
-                              repository: vm.repository.parking,
-                              buildingId: vm.active!.id,
-                              apartment: vm.active!.apartment,
-                            ),
-                    _ => _later(
-                      'ועד בית',
-                      'הבית שלנו, בניהול משותף.',
-                      Icons.account_balance_wallet_outlined,
-                      'כאן יופיעו קופת הבניין, ההוצאות והחיובים של הדירה שלך.\nמסלול הגבייה יתווסף בשלב הבא.',
+              child: TopFade(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: EnterTransition(
+                      key: ValueKey('tab-${vm.tab}'),
+                      child: switch (vm.tab) {
+                        0 => _home(),
+                        1 => _board(),
+                        2 =>
+                          vm.active == null
+                              ? _later(
+                                  'חניה',
+                                  'מקום קטן. עזרה גדולה.',
+                                  Icons.local_parking_rounded,
+                                  'מצטרפים לבניין כדי לשתף ולהזמין חניות עם השכנים.',
+                                )
+                              : ParkingScreen(
+                                  key: ValueKey('parking-${vm.active!.id}'),
+                                  repository: vm.repository.parking,
+                                  buildingId: vm.active!.id,
+                                  apartment: vm.active!.apartment,
+                                ),
+                        _ => _later(
+                          'ועד בית',
+                          'הבית שלנו, בניהול משותף.',
+                          Icons.account_balance_wallet_outlined,
+                          'כאן יופיעו קופת הבניין, ההוצאות והחיובים של הדירה שלך.\nמסלול הגבייה יתווסף בשלב הבא.',
+                        ),
+                      },
                     ),
-                  },
+                  ),
                 ),
               ),
             ),
@@ -376,7 +382,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
                           Icons.apartment_rounded,
                           color: context.glass.accent,
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: Space.m),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,7 +428,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: Space.m),
             Tooltip(
               message: 'עדכונים ובקשות',
               child: IconButton.filledTonal(

@@ -52,7 +52,7 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                   const Row(
                     children: [
                       Eyebrow(appNameEnglish),
-                      SizedBox(width: 16),
+                      SizedBox(width: Space.l),
                       Expanded(
                         child: Align(
                           alignment: Alignment.centerLeft,
@@ -64,15 +64,15 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: Space.xl),
                   const Center(child: BuildingMark(size: 72)),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: Space.l),
                   Text(
                     'נעים להכיר,\nנעים להיות שכנים.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Space.m),
                   Text(
                     'לפני שנכנסים, מכירים את תנאי השימוש\nואת הדרך שבה מטפלים במידע שלך.',
                     textAlign: TextAlign.center,
@@ -82,7 +82,7 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                       color: context.glass.muted,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: Space.xl),
                   GlassPanel(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 18,
@@ -100,7 +100,7 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: Space.l),
                   GlassPanel(
                     padding: const EdgeInsets.all(8),
                     radius: 22,
@@ -123,7 +123,7 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: Space.xl),
                   if (error != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -156,7 +156,7 @@ class _BuildingConsentScreenState extends State<BuildingConsentScreen> {
                         : const Icon(Icons.arrow_forward_rounded, size: 20),
                     label: Text(busy ? 'רגע, שומרים…' : 'מסכימים וממשיכים'),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: Space.m),
                   TextButton(
                     onPressed: busy ? null : widget.onSignOut,
                     child: Text(
@@ -300,7 +300,7 @@ class _DocumentLink extends StatelessWidget {
               size: 24,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: Space.l),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,7 +312,7 @@ class _DocumentLink extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: Space.xs),
                 Text(
                   document.type == 'privacy'
                       ? 'איך מטפלים במידע שלך'
@@ -322,7 +322,7 @@ class _DocumentLink extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Space.s),
           Icon(
             Icons.chevron_left_rounded,
             color: context.glass.muted,
