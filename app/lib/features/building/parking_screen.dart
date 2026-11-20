@@ -10,6 +10,103 @@ import 'glass_widgets.dart';
 String parkingTime(DateTime date) =>
     '\u2066${date.day}.${date.month} · ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}\u2069';
 
+const parkingDayLetters = {
+  DateTime.sunday: 'א׳',
+  DateTime.monday: 'ב׳',
+  DateTime.tuesday: 'ג׳',
+  DateTime.wednesday: 'ד׳',
+  DateTime.thursday: 'ה׳',
+  DateTime.friday: 'ו׳',
+  DateTime.saturday: 'ש׳',
+};
+const parkingDayNames = {
+  DateTime.sunday: 'ראשון',
+  DateTime.monday: 'שני',
+  DateTime.tuesday: 'שלישי',
+  DateTime.wednesday: 'רביעי',
+  DateTime.thursday: 'חמישי',
+  DateTime.friday: 'שישי',
+  DateTime.saturday: 'שבת',
+};
+
+/// Sunday first, as on an Israeli calendar.
+const parkingWeekOrder = [
+  DateTime.sunday,
+  DateTime.monday,
+  DateTime.tuesday,
+  DateTime.wednesday,
+  DateTime.thursday,
+  DateTime.friday,
+  DateTime.saturday,
+];
+
+/// The windows of a regular schedule: on each chosen weekday, [from]–[to],
+/// starting today, for [weeks] weeks. An end at or before the start means the
+/// window runs past midnight. Windows already over are skipped, and one that
+/// has already begun starts now.
+List<ParkingWindow> regularParkingWindows({
+  required Set<int> days,
+  required TimeOfDay from,
+  required TimeOfDay to,
+  required int weeks,
+  required DateTime now,
+}) {
+  final overnight = to.hour * 60 + to.minute <= from.hour * 60 + from.minute;
+  return [
+        for (var d = 0; d < weeks * 7; d++)
+          if (days.contains(DateTime(now.year, now.month, now.day + d).weekday))
+            (
+              start: DateTime(
+                now.year,
+                now.month,
+                now.day + d,
+                from.hour,
+                from.minute,
+              ),
+              end: DateTime(
+                now.year,
+                now.month,
+                now.day + d + (overnight ? 1 : 0),
+                to.hour,
+                to.minute,
+              ),
+            ),
+      ]
+      .where((w) => w.end.isAfter(now))
+      .map(
+        (w) => w.start.isBefore(now)
+            ? (
+                start: DateTime(
+                  now.year,
+                  now.month,
+                  now.day,
+                  now.hour,
+                  now.minute,
+                ),
+                end: w.end,
+              )
+            : w,
+      )
+      .toList();
+}
+
+String _clock(TimeOfDay t) =>
+    '\u2066${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}\u2069';
+
+String _dayAndTime(DateTime t) =>
+    'יום ${parkingDayNames[t.weekday]} ${t.day}.${t.month} בשעה ${_clock(TimeOfDay.fromDateTime(t))}';
+
+/// "א׳–ה׳", "כל יום", or the letters of the chosen days.
+String parkingDaysLabel(Set<int> days) {
+  if (days.length == 7) return 'כל יום';
+  const workweek = {1, 2, 3, 4, 7};
+  if (days.length == 5 && days.containsAll(workweek)) return 'א׳–ה׳';
+  return [
+    for (final d in parkingWeekOrder)
+      if (days.contains(d)) parkingDayLetters[d]!,
+  ].join(' ');
+}
+
 class ParkingScreen extends StatefulWidget {
   const ParkingScreen({
     super.key,
@@ -516,44 +613,25 @@ class _ParkingEditorState extends State<ParkingEditor> {
       notes = TextEditingController(text: widget.space?.notes ?? '');
   bool get describing => widget.space == null || widget.details;
 
-  /// 0 once, 1 every day for a week, 2 Sunday to Thursday for two weeks,
-  /// 3 the same weekday every week for [weeks] weeks.
-  int repeat = 0;
+  /// false: one continuous stretch (start to end, may span days).
+  /// true: the same hours on chosen weekdays, for a number of weeks.
+  bool regular = false;
+  Set<int> days = {1, 2, 3, 4, 7};
+  TimeOfDay dailyFrom = const TimeOfDay(hour: 7, minute: 0);
+  TimeOfDay dailyTo = const TimeOfDay(hour: 14, minute: 0);
   int weeks = 4;
-  static const weekChoices = [4, 8, 12];
-  static const _dayNames = {
-    DateTime.sunday: 'ראשון',
-    DateTime.monday: 'שני',
-    DateTime.tuesday: 'שלישי',
-    DateTime.wednesday: 'רביעי',
-    DateTime.thursday: 'חמישי',
-    DateTime.friday: 'שישי',
-    DateTime.saturday: 'שבת',
-  };
 
-  // Calendar days, not 24-hour steps, so a clock change keeps the same hour.
-  List<ParkingWindow> _windows() {
-    DateTime shift(DateTime t, int days) =>
-        DateTime(t.year, t.month, t.day + days, t.hour, t.minute);
-    if (repeat == 3) {
-      return [
-        for (var i = 0; i < weeks; i++)
-          (start: shift(start, 7 * i), end: shift(end, 7 * i)),
-      ];
-    }
-    return [
-      for (var i = 0; i < const [1, 7, 14][repeat]; i++)
-        if (repeat != 2 ||
-            const {
-              DateTime.sunday,
-              DateTime.monday,
-              DateTime.tuesday,
-              DateTime.wednesday,
-              DateTime.thursday,
-            }.contains(shift(start, i).weekday))
-          (start: shift(start, i), end: shift(end, i)),
-    ];
-  }
+  /// Week counts on offer; 4 weeks of every day is 28 windows, under the
+  /// server's limit of 31 per publish.
+  static const weekChoices = {1: 'השבוע', 2: 'שבועיים', 4: 'חודש'};
+
+  List<ParkingWindow> _windows() => regularParkingWindows(
+    days: days,
+    from: dailyFrom,
+    to: dailyTo,
+    weeks: weeks,
+    now: DateTime.now(),
+  );
 
   late DateTime start = _initialStart();
   DateTime _initialStart() {
@@ -622,13 +700,48 @@ class _ParkingEditorState extends State<ParkingEditor> {
     });
   }
 
+  Future<void> _pickDaily(bool from) async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: from ? dailyFrom : dailyTo,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (time == null || !mounted) return;
+    setState(() => from ? dailyFrom = time : dailyTo = time);
+  }
+
+  String get _summary {
+    if (!regular) {
+      return 'פנויה מ${_dayAndTime(start)} עד ${_dayAndTime(end)}.';
+    }
+    final n = _windows().length;
+    return 'פנויה ב${days.length == 7 ? 'כל יום' : 'ימים ${parkingDaysLabel(days)}'}, '
+        'בין ${_clock(dailyFrom)} ל־${_clock(dailyTo)}, ${weekChoices[weeks] == 'השבוע' ? 'השבוע' : 'במשך ${weekChoices[weeks]}'} '
+        '(${n == 1 ? 'פעם אחת' : '$n פעמים'}).';
+  }
+
+  bool get _spaceDetailsChanged =>
+      widget.space != null &&
+      (level.text.trim() != widget.space!.level ||
+          notes.text.trim() != widget.space!.notes);
+
   Future<void> _save() async {
     if (saving || !form.currentState!.validate()) return;
-    if (!describing && repeat != 0 && end.difference(start).inHours >= 24) {
-      setState(() => error = 'זמינות חוזרת מתאימה לטווח קצר מיממה.');
-      return;
+    if (!describing && regular) {
+      if (days.isEmpty) {
+        setState(() => error = 'יש לבחור לפחות יום אחד.');
+        return;
+      }
+      if (_windows().isEmpty) {
+        setState(() => error = 'אין מועד עתידי בטווח שבחרת.');
+        return;
+      }
     }
     if (!describing &&
+        !regular &&
         (!end.isAfter(start) ||
             !end.isAfter(DateTime.now()) ||
             start.isBefore(
@@ -658,9 +771,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
               level.text,
               notes.text,
             )
-          : repeat == 0
-          ? widget.model.repository.publish(widget.space!.id, start, end)
-          : widget.model.repository.publishSeries(widget.space!.id, _windows()),
+          : _publish(),
     );
     if (!mounted) return;
     if (ok) {
@@ -672,6 +783,39 @@ class _ParkingEditorState extends State<ParkingEditor> {
       });
     }
   }
+
+  /// Saves changed "where is it" notes on the space, then publishes.
+  Future<void> _publish() async {
+    final repo = widget.model.repository;
+    final space = widget.space!;
+    if (_spaceDetailsChanged) {
+      await repo.updateSpace(space.id, space.label, level.text, notes.text);
+    }
+    if (regular) {
+      await repo.publishSeries(space.id, _windows());
+    } else {
+      await repo.publish(space.id, start, end);
+    }
+  }
+
+  Widget _step(int n, String title) => Padding(
+    padding: const EdgeInsets.only(bottom: Space.s),
+    child: Row(
+      children: [
+        CircleAvatar(
+          radius: 13,
+          backgroundColor: context.glass.chip,
+          foregroundColor: context.glass.accent,
+          child: Text(
+            '$n',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+        ),
+        const SizedBox(width: Space.s),
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) => PopScope(
@@ -695,7 +839,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
             Text(
               widget.space == null
                   ? 'החניה תשויך לדירה ${widget.apartment}. כל בני הבית יוכלו לנהל את השיתוף.'
-                  : 'השכנים יוכלו להזמין בחינם את כל הטווח שפרסמת, ללא אישור נוסף.',
+                  : 'בוחרים מתי, מוסיפים איפה, ומפרסמים. השכנים יראו את החניה בלשונית ״פנויות״.',
               style: TextStyle(color: context.glass.muted),
             ),
             const SizedBox(height: Space.xxl),
@@ -737,68 +881,184 @@ class _ParkingEditorState extends State<ParkingEditor> {
                 ),
               ),
             ] else ...[
-              OutlinedButton.icon(
-                key: const Key('parking-start'),
-                onPressed: saving ? null : () => _pick(true),
-                icon: const Icon(Icons.event_available_outlined),
-                label: Text('פנויה מ־${parkingTime(start)}'),
-              ),
-              const SizedBox(height: Space.m),
-              OutlinedButton.icon(
-                key: const Key('parking-end'),
-                onPressed: saving ? null : () => _pick(false),
-                icon: const Icon(Icons.schedule_rounded),
-                label: Text('עד ${parkingTime(end)}'),
-              ),
-              const SizedBox(height: Space.m),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  for (var i = 0; i < 4; i++)
-                    ChoiceChip(
-                      key: ValueKey('parking-repeat-$i'),
-                      selected: repeat == i,
-                      onSelected: saving
-                          ? null
-                          : (_) => setState(() => repeat = i),
-                      label: Text(
-                        [
-                          'פעם אחת',
-                          'כל יום, שבוע',
-                          'א׳–ה׳, שבועיים',
-                          'כל שבוע',
-                        ][i],
-                      ),
-                    ),
+              _step(1, 'מתי החניה פנויה?'),
+              SegmentedButton<bool>(
+                key: const Key('parking-mode'),
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(
+                    value: false,
+                    icon: Icon(Icons.flight_takeoff_rounded),
+                    label: Text('ברצף'),
+                    tooltip: 'למשל: נוסע, פנויה מחמישי עד שלישי',
+                  ),
+                  ButtonSegment(
+                    value: true,
+                    icon: Icon(Icons.event_repeat_rounded),
+                    label: Text('בימים קבועים'),
+                    tooltip: 'למשל: בעבודה א׳–ה׳ 7:00–14:00',
+                  ),
                 ],
+                selected: {regular},
+                onSelectionChanged: saving
+                    ? null
+                    : (v) => setState(() {
+                        regular = v.first;
+                        error = null;
+                      }),
               ),
-              if (repeat == 3) ...[
+              const SizedBox(height: Space.m),
+              if (!regular) ...[
+                OutlinedButton.icon(
+                  key: const Key('parking-start'),
+                  onPressed: saving ? null : () => _pick(true),
+                  icon: const Icon(Icons.event_available_outlined),
+                  label: Text('מ${_dayAndTime(start)}'),
+                ),
                 const SizedBox(height: Space.s),
+                OutlinedButton.icon(
+                  key: const Key('parking-end'),
+                  onPressed: saving ? null : () => _pick(false),
+                  icon: const Icon(Icons.event_busy_outlined),
+                  label: Text('עד ${_dayAndTime(end)}'),
+                ),
+              ] else ...[
                 Text(
-                  'כל יום ${_dayNames[start.weekday]}, לכמה שבועות?',
+                  'באילו ימים?',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
+                const SizedBox(height: Space.xs),
+                Row(
+                  children: [
+                    for (final d in parkingWeekOrder)
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: _DayToggle(
+                            key: ValueKey('parking-day-$d'),
+                            letter: parkingDayLetters[d]!,
+                            name: parkingDayNames[d]!,
+                            selected: days.contains(d),
+                            onTap: saving
+                                ? null
+                                : () => setState(() {
+                                    days = {...days};
+                                    days.contains(d)
+                                        ? days.remove(d)
+                                        : days.add(d);
+                                  }),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                Wrap(
+                  spacing: 4,
+                  children: [
+                    TextButton(
+                      key: const Key('parking-days-workweek'),
+                      onPressed: saving
+                          ? null
+                          : () => setState(() => days = {1, 2, 3, 4, 7}),
+                      child: const Text('א׳–ה׳'),
+                    ),
+                    TextButton(
+                      key: const Key('parking-days-all'),
+                      onPressed: saving
+                          ? null
+                          : () => setState(() => days = {...parkingWeekOrder}),
+                      child: const Text('כל יום'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Space.s),
+                Text(
+                  'באילו שעות?',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: Space.xs),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        key: const Key('parking-daily-from'),
+                        onPressed: saving ? null : () => _pickDaily(true),
+                        child: Text('מ־${_clock(dailyFrom)}'),
+                      ),
+                    ),
+                    const SizedBox(width: Space.s),
+                    Expanded(
+                      child: OutlinedButton(
+                        key: const Key('parking-daily-to'),
+                        onPressed: saving ? null : () => _pickDaily(false),
+                        child: Text('עד ${_clock(dailyTo)}'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Space.m),
+                Text('לכמה זמן?', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: Space.xs),
                 Wrap(
                   spacing: 8,
                   children: [
-                    for (final n in weekChoices)
+                    for (final e in weekChoices.entries)
                       ChoiceChip(
-                        key: ValueKey('parking-weeks-$n'),
-                        selected: weeks == n,
+                        key: ValueKey('parking-weeks-${e.key}'),
+                        selected: weeks == e.key,
                         onSelected: saving
                             ? null
-                            : (_) => setState(() => weeks = n),
-                        label: Text('$n שבועות'),
+                            : (_) => setState(() => weeks = e.key),
+                        label: Text(e.value),
                       ),
                   ],
                 ),
               ],
-              const SizedBox(height: Space.m),
-              const SoftTag(
-                'שיתוף בחינם · הזמנה לכל הטווח',
-                icon: Icons.favorite_border_rounded,
+              const SizedBox(height: Space.xxl),
+              _step(2, 'איפה היא? (לא חובה)'),
+              TextFormField(
+                key: const Key('parking-level'),
+                controller: level,
+                enabled: !saving,
+                maxLength: 20,
+                decoration: const InputDecoration(
+                  labelText: 'מפלס',
+                  hintText: 'למשל ‎-1',
+                ),
+              ),
+              const SizedBox(height: Space.s),
+              TextFormField(
+                key: const Key('parking-notes'),
+                controller: notes,
+                enabled: !saving,
+                maxLength: 200,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'הערות לשכנים',
+                  hintText: 'למשל: שורה ג׳, ליד המעלית',
+                ),
+              ),
+              const SizedBox(height: Space.l),
+              GlassPanel(
+                key: const Key('parking-summary'),
+                tone: GlassTone.accent,
+                padding: const EdgeInsets.all(Space.l),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.local_parking_rounded,
+                      color: context.glass.accent,
+                    ),
+                    const SizedBox(width: Space.s),
+                    Expanded(
+                      child: Text(
+                        'חניה ${widget.space!.label}: $_summary\nבחינם, וכל שכן יכול להזמין בלחיצה.',
+                        style: const TextStyle(height: 1.6),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
             if (error != null)
@@ -892,4 +1152,51 @@ class _ParkingPreviewRepository implements ParkingRepository {
       throw StateError('תצוגת עיצוב בלבד');
   @override
   Future<List<ParkingOffer>> history(String buildingId) async => const [];
+}
+
+/// One weekday in the "which days" row: a full-height toggle that screen
+/// readers announce by the day's full name.
+class _DayToggle extends StatelessWidget {
+  const _DayToggle({
+    super.key,
+    required this.letter,
+    required this.name,
+    required this.selected,
+    required this.onTap,
+  });
+  final String letter, name;
+  final bool selected;
+  final VoidCallback? onTap;
+  @override
+  Widget build(BuildContext context) {
+    final t = context.glass;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'יום $name',
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(Corners.chip),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? t.accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(Corners.chip),
+            border: Border.all(color: selected ? t.accent : t.rule),
+          ),
+          child: Text(
+            letter,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: selected ? t.onAccent : t.ink,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
