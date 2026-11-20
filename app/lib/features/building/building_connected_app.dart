@@ -155,7 +155,7 @@ class _BuildingConnectedAppState extends State<BuildingConnectedApp> {
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       home: loading
           ? const GlassBackground(
-              child: Scaffold(body: LoadingState(label: 'טוענים את הבניין…')),
+              child: Scaffold(body: SkeletonPage(label: 'טוענים את הבניין…')),
             )
           : error != null
           ? GlassBackground(
@@ -235,12 +235,12 @@ class _GoogleWelcomeState extends State<_GoogleWelcome> {
                 const Eyebrow(appNameEnglish),
                 const SizedBox(height: 44),
                 const Center(child: BuildingMark(size: 130)),
-                const SizedBox(height: 32),
+                const SizedBox(height: Space.xxxl),
                 Text(
                   'בית אחד.\nהרבה שכנים טובים.',
                   style: Theme.of(context).textTheme.headlineLarge,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: Space.l),
                 Text(
                   'כל מה שקורה בבניין, במקום אחד פשוט.\nלהתעדכן, לעזור ולנהל את הבית יחד.',
                   style: TextStyle(
@@ -249,7 +249,7 @@ class _GoogleWelcomeState extends State<_GoogleWelcome> {
                     color: context.glass.muted,
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: Space.xxxl),
                 FilledButton.icon(
                   onPressed: busy
                       ? null
@@ -282,7 +282,7 @@ class _GoogleWelcomeState extends State<_GoogleWelcome> {
                       style: TextStyle(color: context.glass.error),
                     ),
                   ),
-                const SizedBox(height: 16),
+                const SizedBox(height: Space.l),
                 Text(
                   'מצטרפים עם קוד בניין, או יוצרים בית חדש ב$appNameHebrew.',
                   textAlign: TextAlign.center,

@@ -16,7 +16,7 @@ extension _BoardTab on _BuildingExperienceState {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Eyebrow('השיחה של הבניין'),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: Space.xs),
                     Text(
                       'לוח הבניין',
                       style: Theme.of(context).textTheme.headlineMedium,
@@ -30,7 +30,7 @@ extension _BoardTab on _BuildingExperienceState {
                 tooltip: 'חיפוש ופרסומים קודמים',
                 icon: const Icon(Icons.search_rounded),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: Space.xs),
               IconButton.filled(
                 key: const Key('board-new-post'),
                 onPressed: vm.active == null ? null : _compose,
@@ -105,12 +105,12 @@ extension _BoardTab on _BuildingExperienceState {
               size: 15,
               color: context.glass.accent,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: Space.s),
             Text(
               pinned.length == 1 ? 'נעוץ' : '${pinned.length} נעוצים',
               style: TextStyle(fontSize: 11, color: context.glass.accent),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Space.s),
             Expanded(
               child: Text(
                 pinned.first.text,
@@ -158,7 +158,7 @@ extension _BoardTab on _BuildingExperienceState {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: Space.s),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,7 +397,7 @@ extension _BoardTab on _BuildingExperienceState {
             const Text(
               'התוכן יוסתר אצלך, ומנהלי הבניין יחליטו אם להסיר אותו. הכותב לא יראה מי דיווח.',
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Space.m),
             TextField(
               key: const Key('report-reason'),
               maxLength: 300,
@@ -457,12 +457,12 @@ class _PostFormState extends State<_PostForm> with _AsyncForm<_PostForm> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Eyebrow('רק לשכנים בבניין שלך'),
-          const SizedBox(height: 8),
+          const SizedBox(height: Space.s),
           Text(
             widget.post == null ? 'מה תרצה לשתף?' : 'עריכת הפרסום',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: Space.xxl),
           if (widget.post == null)
             SegmentedButton<PostKind>(
               segments: const [
@@ -480,7 +480,7 @@ class _PostFormState extends State<_PostForm> with _AsyncForm<_PostForm> {
               selected: {kind},
               onSelectionChanged: (v) => setState(() => kind = v.first),
             ),
-          const SizedBox(height: 18),
+          const SizedBox(height: Space.xl),
           TextFormField(
             key: const Key('board-post-text'),
             controller: text,
@@ -496,7 +496,7 @@ class _PostFormState extends State<_PostForm> with _AsyncForm<_PostForm> {
                 ? 'יש לכתוב משהו לפני הפרסום'
                 : null,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Space.xl),
           if (submitError != null)
             Text(submitError!, style: TextStyle(color: context.glass.error)),
           SizedBox(
@@ -639,7 +639,7 @@ class _ConversationState extends State<_Conversation>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Space.s),
                   ],
                   Expanded(
                     child: ListView(
@@ -654,12 +654,12 @@ class _ConversationState extends State<_Conversation>
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: Space.s),
                               Text(post.text),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: Space.xl),
                         if (post.replies.isEmpty)
                           const Padding(
                             padding: EdgeInsets.all(20),
@@ -700,7 +700,7 @@ class _ConversationState extends State<_Conversation>
                                       if (r.id.isNotEmpty) _replyMenu(r, post),
                                     ],
                                   ),
-                                  const SizedBox(height: 5),
+                                  const SizedBox(height: Space.xs),
                                   Text(r.text),
                                 ],
                               ),
@@ -739,7 +739,7 @@ class _ConversationState extends State<_Conversation>
                             onChanged: (_) => setState(() {}),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: Space.s),
                         IconButton.filled(
                           tooltip: 'שליחת תגובה',
                           onPressed: submitting || reply.text.trim().isEmpty

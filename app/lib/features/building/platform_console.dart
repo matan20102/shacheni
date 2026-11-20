@@ -219,7 +219,7 @@ class _PlatformConsoleState extends State<PlatformConsole> {
                                             color: context.glass.muted,
                                           ),
                                         ),
-                                      const SizedBox(height: 10),
+                                      const SizedBox(height: Space.m),
                                       for (final field in item.fields.entries)
                                         if (field.value.isNotEmpty)
                                           Padding(
@@ -342,7 +342,7 @@ class _ConsoleActionDialogState extends State<_ConsoleActionDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(widget.item.title),
-            const SizedBox(height: 10),
+            const SizedBox(height: Space.m),
             Text(switch (widget.action) {
               ConsoleAction.archive =>
                 'הבניין ייסגר לפעילות לכל הדיירים וההיסטוריה תישמר.',
@@ -350,7 +350,7 @@ class _ConsoleActionDialogState extends State<_ConsoleActionDialog> {
                 'הבניין יחזור לפעילות ולהצטרפות עם ההרשאות הקיימות.',
               ConsoleAction.approveBuilding => 'האישור הוא מטעם הבניין. בדירה עם מנהל נדרש גם אישור מנהל הדירה.',
             }),
-            const SizedBox(height: 16),
+            const SizedBox(height: Space.l),
             TextFormField(
               key: const Key('console-action-reason'),
               controller: reason,

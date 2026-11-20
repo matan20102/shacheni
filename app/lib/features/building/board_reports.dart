@@ -70,12 +70,12 @@ class _BoardReportsPanelState extends State<BoardReportsPanel> {
             'דיווחים על תוכן',
             style: Theme.of(context).textTheme.titleLarge,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: Space.xs),
           Text(
             'שכנים ביקשו לבדוק את התוכן הזה. הכותב אינו רואה מי דיווח.',
             style: TextStyle(color: context.glass.muted, fontSize: 12),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Space.l),
           if (saving) const LinearProgressIndicator(minHeight: 2),
           if (error != null)
             Padding(
@@ -101,7 +101,7 @@ class _BoardReportsPanelState extends State<BoardReportsPanel> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: Space.s),
                     Text(report.text),
                     for (final reason in report.reasons)
                       Padding(
@@ -114,7 +114,7 @@ class _BoardReportsPanelState extends State<BoardReportsPanel> {
                           ),
                         ),
                       ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Space.s),
                     Wrap(
                       spacing: 8,
                       children: [

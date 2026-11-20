@@ -148,7 +148,7 @@ class _AddressPickerState extends State<AddressPicker> {
           ),
         ),
       ),
-      const SizedBox(height: 12),
+      const SizedBox(height: Space.m),
       TextFormField(
         key: const Key('building-house-number'),
         controller: number,
@@ -164,7 +164,7 @@ class _AddressPickerState extends State<AddressPicker> {
         validator: (text) =>
             text == null || text.trim().isEmpty ? 'יש להזין מספר בית' : null,
       ),
-      const SizedBox(height: 6),
+      const SizedBox(height: Space.s),
       Text(
         selected == null
             ? 'בחרו רחוב ועיר מהרשימה, או הקלידו אותם ידנית.'

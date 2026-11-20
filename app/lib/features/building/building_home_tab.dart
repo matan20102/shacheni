@@ -8,17 +8,17 @@ extension _HomeTab on _BuildingExperienceState {
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
       children: [
         const Eyebrow('טוב להיות בבית'),
-        const SizedBox(height: 6),
+        const SizedBox(height: Space.s),
         Text(
           'שלום, ${vm.repository.profile.firstName.isEmpty ? 'שכן' : vm.repository.profile.firstName} 👋',
           style: Theme.of(context).textTheme.headlineLarge,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: Space.s),
         Text(
           'הדברים הקטנים שמחברים את הבניין.',
           style: TextStyle(color: context.glass.muted, fontSize: 15),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: Space.xxl),
         GlassPanel(
           tone: GlassTone.accent,
           child: Row(
@@ -28,7 +28,7 @@ extension _HomeTab on _BuildingExperienceState {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Eyebrow('הבית שלי'),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Space.s),
                     Text(
                       vm.active == null
                           ? 'מתחילים עם הבניין שלך'
@@ -39,7 +39,7 @@ extension _HomeTab on _BuildingExperienceState {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: Space.s),
                     Text(
                       vm.active == null
                           ? 'אפשר ליצור בניין או להצטרף עם קוד.'
@@ -48,7 +48,7 @@ extension _HomeTab on _BuildingExperienceState {
                           : '${vm.active!.name} · ${_apartmentLabel(vm.active!)}',
                       style: TextStyle(color: context.glass.muted),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Space.m),
                     SoftTag(
                       vm.live ? 'הבית שלך' : 'נתוני הדגמה',
                       icon: vm.live
@@ -154,14 +154,14 @@ extension _HomeTab on _BuildingExperienceState {
                             ),
                         ],
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(height: Space.xs),
                       Text(
                         post.text,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 14, height: 1.4),
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(height: Space.xs),
                       Text(
                         '${_replyCount(post.replies.length)} · לפתיחת השיחה',
                         style: TextStyle(
@@ -203,7 +203,7 @@ class _FeatureLine extends StatelessWidget {
         ),
         child: Icon(icon, color: context.glass.accent, size: 24),
       ),
-      const SizedBox(width: 14),
+      const SizedBox(width: Space.l),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,7 +212,7 @@ class _FeatureLine extends StatelessWidget {
               title,
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: Space.xs),
             Text(
               description,
               style: TextStyle(
@@ -234,26 +234,28 @@ class _ActionCard extends StatelessWidget {
   final String title, subtitle;
   final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(26),
-    child: GlassPanel(
-      padding: const EdgeInsets.all(17),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: context.glass.accent, size: 28),
-          const SizedBox(height: 15),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 11, color: context.glass.muted),
-          ),
-        ],
+  Widget build(BuildContext context) => Pressable(
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(Corners.panel),
+      child: GlassPanel(
+        padding: const EdgeInsets.all(17),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: context.glass.accent, size: 28),
+            const SizedBox(height: 15),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: Space.xs),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 11, color: context.glass.muted),
+            ),
+          ],
+        ),
       ),
     ),
   );

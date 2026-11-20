@@ -11,12 +11,12 @@ extension _BuildingMenus on _BuildingExperienceState {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('הבניינים שלי', style: Theme.of(ctx).textTheme.headlineMedium),
-            const SizedBox(height: 6),
+            const SizedBox(height: Space.s),
             Text(
               'בוחרים בית, ומקבלים רק את מה ששייך אליו.',
               style: TextStyle(color: context.glass.muted),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: Space.xl),
             for (final home in vm.homes)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -66,7 +66,7 @@ extension _BuildingMenus on _BuildingExperienceState {
                   ),
                 ),
               ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Space.m),
             FilledButton.icon(
               onPressed: () {
                 Navigator.pop(ctx);
@@ -75,7 +75,7 @@ extension _BuildingMenus on _BuildingExperienceState {
               icon: const Icon(Icons.add_home_outlined),
               label: const Text('יצירת בניין חדש'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Space.s),
             TextButton.icon(
               onPressed: () {
                 Navigator.pop(ctx);
@@ -163,7 +163,7 @@ extension _BuildingMenus on _BuildingExperienceState {
                     ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: Space.m),
               Text(
                 vm.live
                     ? 'הקוד מאפשר בקשת הצטרפות; הגישה נפתחת לאחר אישור.'
@@ -395,12 +395,12 @@ class _HouseholdFormState extends State<_HouseholdForm>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('שם הבית שלכם', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 8),
+        const SizedBox(height: Space.s),
         Text(
           'שם משותף לבני הבית, למשל משפחת כהן. אפשר להשאיר ריק.',
           style: TextStyle(color: context.glass.muted),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: Space.xl),
         TextField(
           key: const Key('household-name'),
           controller: name,
@@ -409,7 +409,7 @@ class _HouseholdFormState extends State<_HouseholdForm>
         ),
         if (submitError != null)
           Text(submitError!, style: TextStyle(color: context.glass.error)),
-        const SizedBox(height: 12),
+        const SizedBox(height: Space.m),
         FilledButton(
           onPressed: submitting
               ? null
@@ -453,19 +453,19 @@ class _BuildingFormState extends State<_BuildingForm>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Eyebrow('בית חדש ב$appNameHebrew'),
-          const SizedBox(height: 8),
+          const SizedBox(height: Space.s),
           Text(
             'נעים להכיר, שכנים.',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Space.s),
           Text(
             'כמה פרטים והבניין מוכן. אין צורך להזין מראש את כל הדירות.',
             style: TextStyle(color: context.glass.muted),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: Space.xxl),
           AddressPicker(onChanged: (value) => address.text = value),
-          const SizedBox(height: 14),
+          const SizedBox(height: Space.l),
           _field(
             name,
             'שם הבניין · לא חובה',
@@ -474,9 +474,9 @@ class _BuildingFormState extends State<_BuildingForm>
             maxLength: 100,
             key: const Key('building-name'),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Space.l),
           _apartmentField(apartment, key: const Key('building-apartment')),
-          const SizedBox(height: 14),
+          const SizedBox(height: Space.l),
           _field(
             householdName,
             'שם הבית שלך · לא חובה',
@@ -485,7 +485,7 @@ class _BuildingFormState extends State<_BuildingForm>
             maxLength: 60,
             key: const Key('building-household-name'),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: Space.xxl),
           if (submitError != null)
             Text(submitError!, style: TextStyle(color: context.glass.error)),
           const GlassPanel(
@@ -495,7 +495,7 @@ class _BuildingFormState extends State<_BuildingForm>
               'תקבל הרשאות מנהל בניין, ועד ומנהל הדירה שלך. בהמשך תוכל לצרף מנהלים נוספים.',
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: Space.xxl),
           SizedBox(
             width: double.infinity,
             child: FilledButton(

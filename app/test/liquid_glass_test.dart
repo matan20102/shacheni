@@ -144,4 +144,67 @@ void main() {
     expect(appearance.value, ThemeMode.dark);
     expect(ctx().glass.dark, isTrue);
   });
+
+  testWidgets('loading shows a skeleton of the page, announced once', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      themed(const GlassBackground(child: Scaffold(body: SkeletonPage()))),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byKey(const Key('skeleton-page')), findsOneWidget);
+    expect(find.bySemanticsLabel('טוענים…'), findsOneWidget);
+  });
+
+  testWidgets('cards press in, and stay still when motion is reduced', (
+    tester,
+  ) async {
+    Future<double> pressedScale({required bool calm}) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildingTheme(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: calm),
+            child: child!,
+          ),
+          home: const Scaffold(
+            body: Center(
+              child: Pressable(child: SizedBox.square(dimension: 80)),
+            ),
+          ),
+        ),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(Pressable)),
+      );
+      await tester.pumpAndSettle();
+      final scale = tester.widget<AnimatedScale>(find.byType(AnimatedScale));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      return scale.scale;
+    }
+
+    expect(await pressedScale(calm: false), lessThan(1));
+    expect(await pressedScale(calm: true), 1);
+  });
+
+  testWidgets('switching tabs animates in unless motion is reduced', (
+    tester,
+  ) async {
+    final vm = BuildingViewModel(LocalBuildingRepository())..enter();
+    addTearDown(vm.dispose);
+    await tester.pumpWidget(themed(BuildingExperience(viewModel: vm)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('nav-2')));
+    await tester.pump(const Duration(milliseconds: 40));
+    expect(
+      find.descendant(
+        of: find.byType(EnterTransition),
+        matching: find.byType(Opacity),
+      ),
+      findsWidgets,
+    );
+    await tester.pumpAndSettle();
+    expect(vm.tab, 2);
+  });
 }
