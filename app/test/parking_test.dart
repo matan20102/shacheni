@@ -230,13 +230,50 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('weekly sharing repeats the same weekday for chosen weeks', (
+  test('regular schedule: Sunday to Thursday, 7:00–14:00, for a month', () {
+    // Wednesday 18.11.2026 at 9:30, in the middle of the first window.
+    final now = DateTime(2026, 11, 18, 9, 30);
+    final windows = regularParkingWindows(
+      days: {7, 1, 2, 3, 4},
+      from: const TimeOfDay(hour: 7, minute: 0),
+      to: const TimeOfDay(hour: 14, minute: 0),
+      weeks: 4,
+      now: now,
+    );
+    expect(windows, hasLength(20));
+    expect(
+      windows.first.start,
+      now,
+      reason: 'a window already begun starts now',
+    );
+    expect(windows.first.end, DateTime(2026, 11, 18, 14));
+    for (final w in windows) {
+      expect({7, 1, 2, 3, 4}, contains(w.start.weekday));
+      expect(w.end.hour, 14);
+    }
+    expect(parkingDaysLabel({7, 1, 2, 3, 4}), 'א׳–ה׳');
+    expect(parkingDaysLabel({...parkingWeekOrder}), 'כל יום');
+  });
+
+  test('regular schedule past midnight ends the next morning', () {
+    final windows = regularParkingWindows(
+      days: {DateTime.friday},
+      from: const TimeOfDay(hour: 22, minute: 0),
+      to: const TimeOfDay(hour: 6, minute: 0),
+      weeks: 1,
+      now: DateTime(2026, 11, 15, 12),
+    );
+    expect(windows.single.start, DateTime(2026, 11, 20, 22));
+    expect(windows.single.end, DateTime(2026, 11, 21, 6));
+  });
+
+  testWidgets('sharing on fixed days publishes each day and saves the notes', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final repo = LocalParkingRepository(apartmentFor: (_) => '12');
-    await repo.addSpace('b', '42', '-1', '');
+    await repo.addSpace('b', '42', '', '');
     await tester.pumpWidget(parkingHarness(repo));
     await tester.pumpAndSettle();
     await tester.tap(find.text('החניות שלנו'));
@@ -246,30 +283,37 @@ void main() {
     await tester.ensureVisible(button);
     await tester.tap(button);
     await tester.pumpAndSettle();
-    final weekly = find.byKey(const ValueKey('parking-repeat-3'));
-    await tester.ensureVisible(weekly);
-    await tester.tap(weekly);
+    await tester.tap(find.text('בימים קבועים'));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('parking-weeks-4')), findsOneWidget);
-    final eight = find.byKey(const ValueKey('parking-weeks-8'));
-    await tester.ensureVisible(eight);
-    await tester.tap(eight);
+    final all = find.byKey(const Key('parking-days-all'));
+    await tester.ensureVisible(all);
+    await tester.tap(all);
     await tester.pumpAndSettle();
+    final week = find.byKey(const ValueKey('parking-weeks-1'));
+    await tester.ensureVisible(week);
+    await tester.tap(week);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('parking-level')), '-2');
+    await tester.enterText(
+      find.byKey(const Key('parking-notes')),
+      'שורה ג׳ ליד המעלית',
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('בכל יום'), findsOneWidget);
     await tester.ensureVisible(find.byKey(const Key('parking-save')));
     await tester.tap(find.byKey(const Key('parking-save')));
     await tester.pumpAndSettle();
-    final offers = (await repo.load('b')).offers.toList()
-      ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
-    expect(offers, hasLength(8));
-    for (final o in offers) {
-      expect(o.startsAt.weekday, offers.first.startsAt.weekday);
-      expect(o.startsAt.hour, offers.first.startsAt.hour);
-      expect(
-        o.endsAt.difference(o.startsAt),
-        offers.first.endsAt.difference(offers.first.startsAt),
-      );
-    }
-    expect(offers.last.startsAt.difference(offers.first.startsAt).inDays, 49);
+    final snapshot = await repo.load('b');
+    final expected = regularParkingWindows(
+      days: {...parkingWeekOrder},
+      from: const TimeOfDay(hour: 7, minute: 0),
+      to: const TimeOfDay(hour: 14, minute: 0),
+      weeks: 1,
+      now: DateTime.now(),
+    );
+    expect(snapshot.offers, hasLength(expected.length));
+    expect(snapshot.spaces.single.level, '-2');
+    expect(snapshot.spaces.single.notes, 'שורה ג׳ ליד המעלית');
     await tester.pumpWidget(const SizedBox());
   });
 
