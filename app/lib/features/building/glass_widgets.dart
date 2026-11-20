@@ -177,6 +177,13 @@ ThemeData buildingTheme([Brightness brightness = Brightness.light]) {
       labelMedium: style(12, FontWeight.w600),
       labelSmall: style(11, FontWeight.w600, c: t.muted),
     ),
+    // Tap areas of at least 48×48, as accessibility guidelines ask.
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         minimumSize: const Size(48, 52),
@@ -564,8 +571,8 @@ class FloatingNav extends StatelessWidget {
           overflow: TextOverflow.fade,
           softWrap: false,
           style: TextStyle(
-            fontSize: 11,
-            fontWeight: on ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 12,
+            fontWeight: on ? FontWeight.w700 : FontWeight.w600,
             color: on ? t.ink : t.muted,
           ),
         ),
@@ -758,35 +765,60 @@ class EnterTransition extends StatelessWidget {
 }
 
 /// Soft fade at the top edge of scrolling content, so it melts under the
-/// header instead of being cut by a hard line.
-class TopFade extends StatelessWidget {
+/// header instead of being cut by a hard line. Shown only once something
+/// has actually scrolled under the header, so resting content stays crisp.
+class TopFade extends StatefulWidget {
   const TopFade({super.key, required this.child, this.height = 18});
   final Widget child;
   final double height;
   @override
+  State<TopFade> createState() => _TopFadeState();
+}
+
+class _TopFadeState extends State<TopFade> {
+  bool under = false;
+  bool _onScroll(ScrollMetricsNotification n) {
+    final m = n.metrics;
+    if (m.axis != Axis.vertical) return false;
+    // Reversed lists (the board) keep older content above, after the end.
+    final hidden = m.axisDirection == AxisDirection.up
+        ? m.extentAfter > 1
+        : m.extentBefore > 1;
+    if (hidden != under) setState(() => under = hidden);
+    return false;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.glass.gradient.first;
-    return Stack(
-      children: [
-        Positioned.fill(child: child),
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: height,
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [c.withValues(alpha: .9), c.withValues(alpha: 0)],
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: _onScroll,
+      child: Stack(
+        children: [
+          Positioned.fill(child: widget.child),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: widget.height,
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: under ? 1 : 0,
+                duration: const Duration(milliseconds: 160),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [c.withValues(alpha: .9), c.withValues(alpha: 0)],
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
