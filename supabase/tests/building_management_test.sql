@@ -86,6 +86,9 @@ select t.as_user('ba000000-0000-4000-8000-000000000003');
 select t.ok('both approvals grant access without roles',
   jsonb_array_length(ba_state()->'homes') = 1 and not (ba_state()->'homes'->0->>'is_apartment_admin')::bool);
 select t.ok('shared reply visible', ba_board(t.get('b')::uuid)->0->'replies'->0->>'text' = 'A reply');
+select t.ok('ordinary resident sees the join code for inviting neighbors',
+  ba_state()->'homes'->0->>'code' = t.get('code'));
+select t.throws('ordinary resident cannot rotate the join code', $$select ba_rotate_code(t.get('b')::uuid)$$, 'ACCESS_DENIED');
 select t.throws('resident cannot read other building', $$select ba_board(t.get('b2')::uuid)$$, 'ACCESS_DENIED');
 
 select t.as_user('ba000000-0000-4000-8000-000000000004');

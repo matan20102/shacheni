@@ -84,7 +84,7 @@ extension _BuildingMenus on _BuildingExperienceState {
               icon: const Icon(Icons.link_rounded),
               label: const Text('הצטרפות עם קוד בניין'),
             ),
-            if (vm.active?.isAdmin ?? false) ...[
+            if ((vm.active?.code ?? '').isNotEmpty) ...[
               const SectionTitle('מזמינים את השכנים'),
               GlassPanel(
                 child: Row(
@@ -154,12 +154,13 @@ extension _BuildingMenus on _BuildingExperienceState {
                     icon: const Icon(Icons.qr_code_2_rounded, size: 18),
                     label: const Text('קוד QR ללובי'),
                   ),
-                  TextButton.icon(
-                    key: const Key('building-code-rotate'),
-                    onPressed: vm.busy ? null : () => _rotateCode(vm.active!),
-                    icon: const Icon(Icons.autorenew_rounded, size: 18),
-                    label: const Text('החלפת הקוד'),
-                  ),
+                  if (vm.active!.isAdmin)
+                    TextButton.icon(
+                      key: const Key('building-code-rotate'),
+                      onPressed: vm.busy ? null : () => _rotateCode(vm.active!),
+                      icon: const Icon(Icons.autorenew_rounded, size: 18),
+                      label: const Text('החלפת הקוד'),
+                    ),
                 ],
               ),
               const SizedBox(height: 10),
