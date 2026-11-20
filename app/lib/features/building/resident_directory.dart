@@ -38,7 +38,7 @@ class BuildingManagementSheet extends StatelessWidget {
               'מידע וניהול הבניין',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: Space.xl),
             GlassPanel(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,11 +48,11 @@ class BuildingManagementSheet extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   if (home.address != home.name) Text(home.address),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Space.s),
                   Text(
                     'דירה ${home.apartment}${home.householdName.isEmpty ? '' : ' · ${home.householdName}'}',
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Space.s),
                   SoftTag(
                     home.isAdmin ? 'מנהל בניין' : 'דייר בבניין',
                     icon: Icons.verified_user_outlined,
@@ -60,15 +60,15 @@ class BuildingManagementSheet extends StatelessWidget {
                 ],
               ),
             ),
-            if (home.isAdmin) ...[
-              const SizedBox(height: 16),
+            if (home.code.isNotEmpty) ...[
+              const SizedBox(height: Space.l),
               InviteQrPanel(
                 key: ValueKey('invite-qr-$buildingId'),
                 name: home.name,
                 code: home.code,
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: Space.xxl),
             ResidentDirectory(
               key: ValueKey(buildingId),
               vm: vm,
@@ -80,7 +80,7 @@ class BuildingManagementSheet extends StatelessWidget {
                 vm: vm,
                 buildingId: buildingId,
               ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Space.xxl),
             OutlinedButton.icon(
               key: const Key('building-leave'),
               onPressed: vm.busy ? null : () => onLeave(context, home),
@@ -88,17 +88,17 @@ class BuildingManagementSheet extends StatelessWidget {
               label: const Text('יציאה מהבניין'),
             ),
             if (home.isAdmin) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: Space.m),
               TextButton.icon(
                 key: const Key('building-archive'),
                 onPressed: vm.busy ? null : () => onArchive(context, home),
                 icon: const Icon(Icons.inventory_2_outlined),
                 label: const Text('ארכוב הבניין'),
               ),
-              const SizedBox(height: 8),
-              const Text(
+              const SizedBox(height: Space.s),
+              Text(
                 'ארכוב סוגר את הבניין לפעילות ולהצטרפות ושומר את ההיסטוריה.',
-                style: TextStyle(color: glassMuted),
+                style: TextStyle(color: context.glass.muted),
               ),
             ],
           ],
@@ -145,11 +145,11 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(member.name, style: Theme.of(ctx).textTheme.headlineMedium),
-              const SizedBox(height: 8),
+              const SizedBox(height: Space.s),
               Text(
                 'דירה ${member.apartment}${member.household.isEmpty ? '' : ' · ${member.household}'}',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Space.l),
               if (member.isApartmentAdmin)
                 const SoftTag('מנהל הדירה', icon: Icons.home_outlined),
               if (member.isAdmin)
@@ -161,13 +161,13 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
                   ),
                 ),
               if (admin) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: Space.xxl),
                 Text(
                   member.isAdmin
                       ? 'אפשר להסיר את הרשאת ניהול הבניין. החברות בבניין נשמרת.'
                       : 'מנהל בניין יכול לאשר הצטרפות, למנות מנהלים ולארכב את הבניין.',
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: Space.l),
                 FilledButton(
                   key: const Key('resident-change-role'),
                   onPressed: () =>
@@ -179,11 +179,13 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
                   ),
                 ),
                 if (!member.mine && !member.isAdmin) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Space.s),
                   TextButton.icon(
                     key: const Key('resident-remove'),
                     onPressed: () => Navigator.pop(ctx, 'remove'),
-                    style: TextButton.styleFrom(foregroundColor: glassError),
+                    style: TextButton.styleFrom(
+                      foregroundColor: context.glass.error,
+                    ),
                     icon: const Icon(Icons.person_remove_outlined),
                     label: const Text('הסרה מהבניין'),
                   ),
@@ -245,12 +247,12 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('השכנים בבניין', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 4),
-          const Text(
+          const SizedBox(height: Space.xs),
+          Text(
             'מסודרים לפי דירה · מנהל הבית מופיע ראשון',
-            style: TextStyle(color: glassMuted, fontSize: 12),
+            style: TextStyle(color: context.glass.muted, fontSize: 12),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Space.l),
           if (model.loading || model.saving) const LinearProgressIndicator(),
           if (model.error != null)
             Padding(
@@ -281,9 +283,9 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
                   children: [
                     Text(
                       'דירה ${entry.key}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: glassTeal,
+                        color: context.glass.accent,
                       ),
                     ),
                     for (final member in entry.value)
@@ -291,7 +293,7 @@ class _ResidentDirectoryState extends State<ResidentDirectory> {
                         key: ValueKey('resident-${member.id}'),
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
-                          backgroundColor: const Color(0xFFE0F0EE),
+                          backgroundColor: context.glass.chip,
                           child: Text(
                             member.name.isEmpty
                                 ? 'ש'

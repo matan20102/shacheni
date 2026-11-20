@@ -16,7 +16,7 @@ extension _BoardTab on _BuildingExperienceState {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Eyebrow('השיחה של הבניין'),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: Space.xs),
                     Text(
                       'לוח הבניין',
                       style: Theme.of(context).textTheme.headlineMedium,
@@ -30,7 +30,7 @@ extension _BoardTab on _BuildingExperienceState {
                 tooltip: 'חיפוש ופרסומים קודמים',
                 icon: const Icon(Icons.search_rounded),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: Space.xs),
               IconButton.filled(
                 key: const Key('board-new-post'),
                 onPressed: vm.active == null ? null : _compose,
@@ -82,9 +82,9 @@ extension _BoardTab on _BuildingExperienceState {
           label: const Text('טעינת פרסומים קודמים'),
         ),
         if (vm.olderError != null)
-          const Text(
+          Text(
             'הטעינה נכשלה. אפשר לנסות שוב.',
-            style: TextStyle(fontSize: 12, color: glassMuted),
+            style: TextStyle(fontSize: 12, color: context.glass.muted),
           ),
       ],
     ),
@@ -97,16 +97,20 @@ extension _BoardTab on _BuildingExperienceState {
       borderRadius: BorderRadius.circular(12),
       child: GlassPanel(
         radius: 12,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
         child: Row(
           children: [
-            const Icon(Icons.push_pin_outlined, size: 15, color: glassTeal),
-            const SizedBox(width: 6),
+            Icon(
+              Icons.push_pin_outlined,
+              size: 15,
+              color: context.glass.accent,
+            ),
+            const SizedBox(width: Space.s),
             Text(
               pinned.length == 1 ? 'נעוץ' : '${pinned.length} נעוצים',
-              style: const TextStyle(fontSize: 11, color: glassTeal),
+              style: TextStyle(fontSize: 11, color: context.glass.accent),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Space.s),
             Expanded(
               child: Text(
                 pinned.first.text,
@@ -130,8 +134,8 @@ extension _BoardTab on _BuildingExperienceState {
         padding: const EdgeInsets.only(bottom: 9),
         child: GlassPanel(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-          tint: post.mine ? const Color(0xFFD8F0ED) : Colors.white,
-          opacity: post.closed ? .65 : .88,
+          tone: post.mine ? GlassTone.mine : GlassTone.strong,
+          faded: post.closed,
           radius: 18,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,9 +145,11 @@ extension _BoardTab on _BuildingExperienceState {
                   CircleAvatar(
                     radius: 14,
                     backgroundColor: post.mine
-                        ? glassTeal
-                        : const Color(0xFFE0E8F0),
-                    foregroundColor: post.mine ? Colors.white : glassInk,
+                        ? context.glass.accent
+                        : context.glass.chip,
+                    foregroundColor: post.mine
+                        ? context.glass.onAccent
+                        : context.glass.ink,
                     child: Text(
                       post.author.isEmpty ? 'ש' : post.author.characters.first,
                       style: const TextStyle(
@@ -152,7 +158,7 @@ extension _BoardTab on _BuildingExperienceState {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: Space.s),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,49 +176,55 @@ extension _BoardTab on _BuildingExperienceState {
                           'דירה ${post.apartment.split(' · כניסה ').first} · ${post.kind == PostKind.request ? 'בקשת עזרה' : 'מודעה'} · ${_relative(post.createdAt)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: glassMuted,
+                            color: context.glass.muted,
                           ),
                         ),
                       ],
                     ),
                   ),
                   if (post.pinned)
-                    const Icon(
+                    Icon(
                       Icons.push_pin_outlined,
                       size: 14,
-                      color: glassTeal,
+                      color: context.glass.accent,
                     ),
                   PostPhotos(paths: post.images, load: vm.repository.postImage),
                   if (post.closed)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(right: 5),
                       child: Icon(
                         Icons.check_circle_outline,
                         size: 15,
-                        color: glassTeal,
+                        color: context.glass.accent,
                       ),
                     ),
                   _postOptions(post),
                 ],
               ),
-              InkWell(
-                onTap: () => _conversation(post.id),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Text(
-                    post.text,
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 14, height: 1.4),
+              // Read as text by screen readers; the replies button below
+              // opens the same conversation with a full-size tap target.
+              Semantics(
+                label: post.text,
+                excludeSemantics: true,
+                child: InkWell(
+                  onTap: () => _conversation(post.id),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Text(
+                      post.text,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 14, height: 1.4),
+                    ),
                   ),
                 ),
               ),
               if (post.closed)
                 Text(
                   post.kind == PostKind.request ? 'נפתר' : 'לא רלוונטי',
-                  style: const TextStyle(fontSize: 10, color: glassMuted),
+                  style: TextStyle(fontSize: 10, color: context.glass.muted),
                 ),
               Wrap(
                 spacing: 4,
@@ -220,16 +232,17 @@ extension _BoardTab on _BuildingExperienceState {
                 children: [
                   for (final reaction in post.reactions.entries)
                     ActionChip(
-                      visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      tooltip: post.myReactions.contains(reaction.key)
+                          ? 'ביטול התגובה ${reaction.key}'
+                          : 'הוספת תגובה ${reaction.key}',
                       backgroundColor: post.myReactions.contains(reaction.key)
-                          ? const Color(0xFFB7DED7)
-                          : Colors.white.withValues(alpha: .6),
+                          ? context.glass.accent.withValues(alpha: .28)
+                          : context.glass.chip,
                       side: BorderSide.none,
                       label: Text(
                         '${reaction.key} ${reaction.value}',
-                        style: const TextStyle(fontSize: 11),
+                        style: const TextStyle(fontSize: 12),
                       ),
                       onPressed: vm.busy
                           ? null
@@ -239,10 +252,10 @@ extension _BoardTab on _BuildingExperienceState {
                     ),
                   PopupMenuButton<String>(
                     tooltip: 'הוספת תגובה באימוג׳י',
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.add_reaction_outlined,
                       size: 18,
-                      color: glassMuted,
+                      color: context.glass.muted,
                     ),
                     constraints: const BoxConstraints(minWidth: 80),
                     padding: EdgeInsets.zero,
@@ -255,9 +268,8 @@ extension _BoardTab on _BuildingExperienceState {
                   ),
                   TextButton.icon(
                     style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 32),
+                      minimumSize: const Size(48, 48),
                       padding: const EdgeInsets.symmetric(horizontal: 5),
-                      visualDensity: VisualDensity.compact,
                     ),
                     onPressed: () => _conversation(post.id),
                     icon: const Icon(
@@ -266,7 +278,7 @@ extension _BoardTab on _BuildingExperienceState {
                     ),
                     label: Text(
                       _replyCount(post.replies.length),
-                      style: const TextStyle(fontSize: 11),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ),
                 ],
@@ -394,7 +406,7 @@ extension _BoardTab on _BuildingExperienceState {
             const Text(
               'התוכן יוסתר אצלך, ומנהלי הבניין יחליטו אם להסיר אותו. הכותב לא יראה מי דיווח.',
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Space.m),
             TextField(
               key: const Key('report-reason'),
               maxLength: 300,
@@ -455,12 +467,12 @@ class _PostFormState extends State<_PostForm> with _AsyncForm<_PostForm> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Eyebrow('רק לשכנים בבניין שלך'),
-          const SizedBox(height: 8),
+          const SizedBox(height: Space.s),
           Text(
             widget.post == null ? 'מה תרצה לשתף?' : 'עריכת הפרסום',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: Space.xxl),
           if (widget.post == null)
             SegmentedButton<PostKind>(
               segments: const [
@@ -478,7 +490,7 @@ class _PostFormState extends State<_PostForm> with _AsyncForm<_PostForm> {
               selected: {kind},
               onSelectionChanged: (v) => setState(() => kind = v.first),
             ),
-          const SizedBox(height: 18),
+          const SizedBox(height: Space.xl),
           TextFormField(
             key: const Key('board-post-text'),
             controller: text,
@@ -495,16 +507,16 @@ class _PostFormState extends State<_PostForm> with _AsyncForm<_PostForm> {
                 : null,
           ),
           if (widget.post == null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: Space.s),
             PostImagePicker(
               images: images,
               enabled: !submitting,
               onChanged: (next) => setState(() => images = next),
             ),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: Space.xl),
           if (submitError != null)
-            Text(submitError!, style: const TextStyle(color: glassError)),
+            Text(submitError!, style: TextStyle(color: context.glass.error)),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -647,7 +659,7 @@ class _ConversationState extends State<_Conversation>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Space.s),
                   ],
                   Expanded(
                     child: ListView(
@@ -662,7 +674,7 @@ class _ConversationState extends State<_Conversation>
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: Space.s),
                               Text(post.text),
                               PostPhotos(
                                 paths: post.images,
@@ -671,7 +683,7 @@ class _ConversationState extends State<_Conversation>
                             ],
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: Space.xl),
                         if (post.replies.isEmpty)
                           const Padding(
                             padding: EdgeInsets.all(20),
@@ -685,9 +697,7 @@ class _ConversationState extends State<_Conversation>
                             padding: const EdgeInsets.only(bottom: 10),
                             child: GlassPanel(
                               padding: const EdgeInsets.all(16),
-                              tint: r.mine
-                                  ? const Color(0xFFD8F0ED)
-                                  : Colors.white,
+                              tone: r.mine ? GlassTone.mine : GlassTone.strong,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -696,25 +706,25 @@ class _ConversationState extends State<_Conversation>
                                       Expanded(
                                         child: Text(
                                           r.mine ? 'אני' : r.author,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: glassTeal,
+                                            color: context.glass.accent,
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
                                       ),
                                       if (r.edited)
-                                        const Text(
+                                        Text(
                                           'נערך',
                                           style: TextStyle(
                                             fontSize: 10,
-                                            color: glassMuted,
+                                            color: context.glass.muted,
                                           ),
                                         ),
                                       if (r.id.isNotEmpty) _replyMenu(r, post),
                                     ],
                                   ),
-                                  const SizedBox(height: 5),
+                                  const SizedBox(height: Space.xs),
                                   Text(r.text),
                                 ],
                               ),
@@ -729,12 +739,12 @@ class _ConversationState extends State<_Conversation>
                       submitError!,
                       maxLines: compact ? 1 : null,
                       overflow: compact ? TextOverflow.ellipsis : null,
-                      style: const TextStyle(color: glassError),
+                      style: TextStyle(color: context.glass.error),
                     ),
                   if (post.closed)
-                    const Text(
+                    Text(
                       'הפרסום סגור לתגובות. הכותב יכול לפתוח אותו מחדש.',
-                      style: TextStyle(color: glassMuted),
+                      style: TextStyle(color: context.glass.muted),
                     )
                   else
                     Row(
@@ -753,7 +763,7 @@ class _ConversationState extends State<_Conversation>
                             onChanged: (_) => setState(() {}),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: Space.s),
                         IconButton.filled(
                           tooltip: 'שליחת תגובה',
                           onPressed: submitting || reply.text.trim().isEmpty

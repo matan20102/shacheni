@@ -119,7 +119,10 @@ void main() {
       final tomorrow = DateUtils.dateOnly(DateTime.now())
           .add(const Duration(days: 1));
       await tester.enterText(
-        find.byType(TextField),
+        find.descendant(
+          of: find.byType(Dialog),
+          matching: find.byType(TextField),
+        ),
         l.formatCompactDate(tomorrow),
       );
       await tester.tap(find.text(l.okButtonLabel));

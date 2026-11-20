@@ -118,7 +118,7 @@ class _AddressPickerState extends State<AddressPicker> {
             elevation: 6,
             borderRadius: BorderRadius.circular(18),
             clipBehavior: Clip.antiAlias,
-            color: const Color(0xFFF5FAFB),
+            color: context.glass.sheet,
             child: SizedBox(
               width: (MediaQuery.sizeOf(context).width - 48).clamp(200, 592),
               child: ConstrainedBox(
@@ -132,9 +132,9 @@ class _AddressPickerState extends State<AddressPicker> {
                     return ListTile(
                       dense: true,
                       visualDensity: VisualDensity.compact,
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.location_on_outlined,
-                        color: glassTeal,
+                        color: context.glass.accent,
                         size: 20,
                       ),
                       title: Text(option.street),
@@ -148,7 +148,7 @@ class _AddressPickerState extends State<AddressPicker> {
           ),
         ),
       ),
-      const SizedBox(height: 12),
+      const SizedBox(height: Space.m),
       TextFormField(
         key: const Key('building-house-number'),
         controller: number,
@@ -164,12 +164,12 @@ class _AddressPickerState extends State<AddressPicker> {
         validator: (text) =>
             text == null || text.trim().isEmpty ? 'יש להזין מספר בית' : null,
       ),
-      const SizedBox(height: 6),
+      const SizedBox(height: Space.s),
       Text(
         selected == null
             ? 'בחרו רחוב ועיר מהרשימה, או הקלידו אותם ידנית.'
             : 'מקור הרחובות: רשות האוכלוסין וההגירה · data.gov.il',
-        style: const TextStyle(fontSize: 11, color: glassMuted),
+        style: TextStyle(fontSize: 11, color: context.glass.muted),
       ),
     ],
   );

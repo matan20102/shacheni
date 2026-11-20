@@ -11,12 +11,12 @@ extension _BuildingMenus on _BuildingExperienceState {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('הבניינים שלי', style: Theme.of(ctx).textTheme.headlineMedium),
-            const SizedBox(height: 6),
-            const Text(
+            const SizedBox(height: Space.s),
+            Text(
               'בוחרים בית, ומקבלים רק את מה ששייך אליו.',
-              style: TextStyle(color: glassMuted),
+              style: TextStyle(color: context.glass.muted),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: Space.xl),
             for (final home in vm.homes)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -26,18 +26,18 @@ extension _BuildingMenus on _BuildingExperienceState {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       ListTile(
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.apartment_rounded,
-                          color: glassTeal,
+                          color: context.glass.accent,
                         ),
                         title: Text(home.name),
                         subtitle: Text(
                           '${home.address} · ${_apartmentLabel(home)}',
                         ),
                         trailing: home.id == vm.active?.id
-                            ? const Icon(
+                            ? Icon(
                                 Icons.check_circle_rounded,
-                                color: glassTeal,
+                                color: context.glass.accent,
                               )
                             : null,
                         onTap: () {
@@ -66,7 +66,7 @@ extension _BuildingMenus on _BuildingExperienceState {
                   ),
                 ),
               ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Space.m),
             FilledButton.icon(
               onPressed: () {
                 Navigator.pop(ctx);
@@ -75,7 +75,7 @@ extension _BuildingMenus on _BuildingExperienceState {
               icon: const Icon(Icons.add_home_outlined),
               label: const Text('יצירת בניין חדש'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Space.s),
             TextButton.icon(
               onPressed: () {
                 Navigator.pop(ctx);
@@ -84,7 +84,7 @@ extension _BuildingMenus on _BuildingExperienceState {
               icon: const Icon(Icons.link_rounded),
               label: const Text('הצטרפות עם קוד בניין'),
             ),
-            if (vm.active?.isAdmin ?? false) ...[
+            if ((vm.active?.code ?? '').isNotEmpty) ...[
               const SectionTitle('מזמינים את השכנים'),
               GlassPanel(
                 child: Row(
@@ -93,16 +93,24 @@ extension _BuildingMenus on _BuildingExperienceState {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'קוד ההצטרפות לבניין',
-                            style: TextStyle(fontSize: 12, color: glassMuted),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.glass.muted,
+                            ),
                           ),
-                          SelectableText(
-                            vm.active!.code,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: glassTeal,
+                          // The copy button next to it serves screen readers.
+                          Semantics(
+                            label: 'קוד הבניין ${vm.active!.code}',
+                            excludeSemantics: true,
+                            child: SelectableText(
+                              vm.active!.code,
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: context.glass.accent,
+                              ),
                             ),
                           ),
                         ],
@@ -151,20 +159,21 @@ extension _BuildingMenus on _BuildingExperienceState {
                     icon: const Icon(Icons.qr_code_2_rounded, size: 18),
                     label: const Text('קוד QR ללובי'),
                   ),
-                  TextButton.icon(
-                    key: const Key('building-code-rotate'),
-                    onPressed: vm.busy ? null : () => _rotateCode(vm.active!),
-                    icon: const Icon(Icons.autorenew_rounded, size: 18),
-                    label: const Text('החלפת הקוד'),
-                  ),
+                  if (vm.active!.isAdmin)
+                    TextButton.icon(
+                      key: const Key('building-code-rotate'),
+                      onPressed: vm.busy ? null : () => _rotateCode(vm.active!),
+                      icon: const Icon(Icons.autorenew_rounded, size: 18),
+                      label: const Text('החלפת הקוד'),
+                    ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: Space.m),
               Text(
                 vm.live
                     ? 'הקוד מאפשר בקשת הצטרפות; הגישה נפתחת לאחר אישור.'
                     : 'בתצוגה המקומית הקוד עובד באותה הפעלה בלבד.',
-                style: TextStyle(fontSize: 12, color: glassMuted),
+                style: TextStyle(fontSize: 12, color: context.glass.muted),
               ),
             ],
           ],
@@ -334,7 +343,7 @@ extension _BuildingMenus on _BuildingExperienceState {
           ),
           FilledButton(
             key: const Key('account-delete-confirm'),
-            style: FilledButton.styleFrom(backgroundColor: glassError),
+            style: FilledButton.styleFrom(backgroundColor: context.glass.error),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('מחיקת החשבון'),
           ),
@@ -391,12 +400,12 @@ class _HouseholdFormState extends State<_HouseholdForm>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('שם הבית שלכם', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 8),
-        const Text(
+        const SizedBox(height: Space.s),
+        Text(
           'שם משותף לבני הבית, למשל משפחת כהן. אפשר להשאיר ריק.',
-          style: TextStyle(color: glassMuted),
+          style: TextStyle(color: context.glass.muted),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: Space.xl),
         TextField(
           key: const Key('household-name'),
           controller: name,
@@ -404,8 +413,8 @@ class _HouseholdFormState extends State<_HouseholdForm>
           decoration: const InputDecoration(labelText: 'שם הבית'),
         ),
         if (submitError != null)
-          Text(submitError!, style: const TextStyle(color: glassError)),
-        const SizedBox(height: 12),
+          Text(submitError!, style: TextStyle(color: context.glass.error)),
+        const SizedBox(height: Space.m),
         FilledButton(
           onPressed: submitting
               ? null
@@ -449,19 +458,19 @@ class _BuildingFormState extends State<_BuildingForm>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Eyebrow('בית חדש ב$appNameHebrew'),
-          const SizedBox(height: 8),
+          const SizedBox(height: Space.s),
           Text(
             'נעים להכיר, שכנים.',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
-          const SizedBox(height: 8),
-          const Text(
+          const SizedBox(height: Space.s),
+          Text(
             'כמה פרטים והבניין מוכן. אין צורך להזין מראש את כל הדירות.',
-            style: TextStyle(color: glassMuted),
+            style: TextStyle(color: context.glass.muted),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: Space.xxl),
           AddressPicker(onChanged: (value) => address.text = value),
-          const SizedBox(height: 14),
+          const SizedBox(height: Space.l),
           _field(
             name,
             'שם הבניין · לא חובה',
@@ -470,9 +479,9 @@ class _BuildingFormState extends State<_BuildingForm>
             maxLength: 100,
             key: const Key('building-name'),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Space.l),
           _apartmentField(apartment, key: const Key('building-apartment')),
-          const SizedBox(height: 14),
+          const SizedBox(height: Space.l),
           _field(
             householdName,
             'שם הבית שלך · לא חובה',
@@ -481,9 +490,9 @@ class _BuildingFormState extends State<_BuildingForm>
             maxLength: 60,
             key: const Key('building-household-name'),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: Space.xxl),
           if (submitError != null)
-            Text(submitError!, style: const TextStyle(color: glassError)),
+            Text(submitError!, style: TextStyle(color: context.glass.error)),
           const GlassPanel(
             child: _FeatureLine(
               Icons.verified_user_outlined,
@@ -491,7 +500,7 @@ class _BuildingFormState extends State<_BuildingForm>
               'תקבל הרשאות מנהל בניין, ועד ומנהל הדירה שלך. בהמשך תוכל לצרף מנהלים נוספים.',
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: Space.xxl),
           SizedBox(
             width: double.infinity,
             child: FilledButton(

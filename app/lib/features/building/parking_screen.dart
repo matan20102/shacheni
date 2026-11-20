@@ -10,6 +10,103 @@ import 'glass_widgets.dart';
 String parkingTime(DateTime date) =>
     '\u2066${date.day}.${date.month} · ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}\u2069';
 
+const parkingDayLetters = {
+  DateTime.sunday: 'א׳',
+  DateTime.monday: 'ב׳',
+  DateTime.tuesday: 'ג׳',
+  DateTime.wednesday: 'ד׳',
+  DateTime.thursday: 'ה׳',
+  DateTime.friday: 'ו׳',
+  DateTime.saturday: 'ש׳',
+};
+const parkingDayNames = {
+  DateTime.sunday: 'ראשון',
+  DateTime.monday: 'שני',
+  DateTime.tuesday: 'שלישי',
+  DateTime.wednesday: 'רביעי',
+  DateTime.thursday: 'חמישי',
+  DateTime.friday: 'שישי',
+  DateTime.saturday: 'שבת',
+};
+
+/// Sunday first, as on an Israeli calendar.
+const parkingWeekOrder = [
+  DateTime.sunday,
+  DateTime.monday,
+  DateTime.tuesday,
+  DateTime.wednesday,
+  DateTime.thursday,
+  DateTime.friday,
+  DateTime.saturday,
+];
+
+/// The windows of a regular schedule: on each chosen weekday, [from]–[to],
+/// starting today, for [weeks] weeks. An end at or before the start means the
+/// window runs past midnight. Windows already over are skipped, and one that
+/// has already begun starts now.
+List<ParkingWindow> regularParkingWindows({
+  required Set<int> days,
+  required TimeOfDay from,
+  required TimeOfDay to,
+  required int weeks,
+  required DateTime now,
+}) {
+  final overnight = to.hour * 60 + to.minute <= from.hour * 60 + from.minute;
+  return [
+        for (var d = 0; d < weeks * 7; d++)
+          if (days.contains(DateTime(now.year, now.month, now.day + d).weekday))
+            (
+              start: DateTime(
+                now.year,
+                now.month,
+                now.day + d,
+                from.hour,
+                from.minute,
+              ),
+              end: DateTime(
+                now.year,
+                now.month,
+                now.day + d + (overnight ? 1 : 0),
+                to.hour,
+                to.minute,
+              ),
+            ),
+      ]
+      .where((w) => w.end.isAfter(now))
+      .map(
+        (w) => w.start.isBefore(now)
+            ? (
+                start: DateTime(
+                  now.year,
+                  now.month,
+                  now.day,
+                  now.hour,
+                  now.minute,
+                ),
+                end: w.end,
+              )
+            : w,
+      )
+      .toList();
+}
+
+String _clock(TimeOfDay t) =>
+    '\u2066${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}\u2069';
+
+String _dayAndTime(DateTime t) =>
+    'יום ${parkingDayNames[t.weekday]} ${t.day}.${t.month} בשעה ${_clock(TimeOfDay.fromDateTime(t))}';
+
+/// "א׳–ה׳", "כל יום", or the letters of the chosen days.
+String parkingDaysLabel(Set<int> days) {
+  if (days.length == 7) return 'כל יום';
+  const workweek = {1, 2, 3, 4, 7};
+  if (days.length == 5 && days.containsAll(workweek)) return 'א׳–ה׳';
+  return [
+    for (final d in parkingWeekOrder)
+      if (days.contains(d)) parkingDayLetters[d]!,
+  ].join(' ');
+}
+
 class ParkingScreen extends StatefulWidget {
   const ParkingScreen({
     super.key,
@@ -108,13 +205,7 @@ class _ParkingScreenState extends State<ParkingScreen>
     );
     if (saved == true && mounted) {
       setState(() => section = 1);
-      _message(
-        space == null
-            ? 'החניה נוספה לדירה'
-            : details
-            ? 'פרטי החניה עודכנו'
-            : 'הזמינות פורסמה לשכנים',
-      );
+      _message(details ? 'פרטי החניה עודכנו' : 'החניה פורסמה לשכנים');
     }
   }
 
@@ -134,7 +225,7 @@ class _ParkingScreenState extends State<ParkingScreen>
             Text(
               'מ־${parkingTime(offer.startsAt)}\nעד ${parkingTime(offer.endsAt)}',
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Space.m),
             Text(
               cancel
                   ? (offer.ownSpace
@@ -196,27 +287,24 @@ class _ParkingScreenState extends State<ParkingScreen>
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
           children: [
             const Eyebrow('מפנים מקום לשכנים'),
-            const SizedBox(height: 4),
+            const SizedBox(height: Space.xs),
             Text(
               'החניון שלנו',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 8),
-            const Text(
+            const SizedBox(height: Space.s),
+            Text(
               'חניה פנויה אצלך? לשכן זה יכול לעשות את היום.',
-              style: TextStyle(color: glassMuted),
+              style: TextStyle(color: context.glass.muted),
             ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton.icon(
-                key: const Key('parking-add'),
-                onPressed: model.saving ? null : () => _editor(),
-                icon: const Icon(Icons.add_circle_outline_rounded),
-                label: const Text('הוספת חניה לדירה'),
-              ),
+            const SizedBox(height: Space.m),
+            FilledButton.icon(
+              key: const Key('parking-share'),
+              onPressed: model.saving || model.loading ? null : () => _editor(),
+              icon: const Icon(Icons.local_parking_rounded),
+              label: const Text('שיתוף החניה שלי'),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: Space.m),
             Wrap(
               spacing: 8,
               runSpacing: 4,
@@ -235,7 +323,7 @@ class _ParkingScreenState extends State<ParkingScreen>
                   ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: Space.xl),
             if (model.loading || model.saving)
               const Padding(
                 padding: EdgeInsets.only(bottom: 12),
@@ -270,7 +358,7 @@ class _ParkingScreenState extends State<ParkingScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _spaceTitle(space, 'של דירה ${widget.apartment}'),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: Space.m),
                         OutlinedButton.icon(
                           key: ValueKey('parking-share-${space.id}'),
                           onPressed: model.saving ? null : () => _editor(space),
@@ -318,15 +406,15 @@ class _ParkingScreenState extends State<ParkingScreen>
                               ? 'החניה שלנו'
                               : 'של דירה ${past.apartment}',
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: Space.s),
                         Text(
                           'מ־${parkingTime(past.startsAt)} עד ${parkingTime(past.endsAt)}',
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: Space.xs),
                         Text(
                           _historyStatus(past),
-                          style: const TextStyle(
-                            color: glassMuted,
+                          style: TextStyle(
+                            color: context.glass.muted,
                             fontSize: 12,
                           ),
                         ),
@@ -349,12 +437,12 @@ class _ParkingScreenState extends State<ParkingScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.local_parking_rounded,
-                      color: glassTeal,
+                      color: context.glass.accent,
                       size: 34,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Space.m),
                     Text(
                       [
                         'עדיין אין חניות פנויות',
@@ -364,15 +452,15 @@ class _ParkingScreenState extends State<ParkingScreen>
                       ][section],
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: Space.s),
                     Text(
                       [
                         'כששכן ישתף חניה, אפשר יהיה להזמין אותה כאן.',
-                        'מוסיפים חניה פעם אחת. כל בני הבית יוכלו לשתף אותה כשהיא פנויה.',
+                        'לוחצים ״שיתוף החניה שלי״, בוחרים מתי היא פנויה, וזהו. החניה נשמרת לכל בני הבית.',
                         'חניה שהזמנת תופיע כאן עם השעות והמיקום.',
                         'שיתופים והזמנות שהסתיימו או בוטלו יופיעו כאן.',
                       ][section],
-                      style: const TextStyle(color: glassMuted),
+                      style: TextStyle(color: context.glass.muted),
                     ),
                   ],
                 ),
@@ -396,12 +484,12 @@ class _ParkingScreenState extends State<ParkingScreen>
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: const Color(0xFFD9EFED),
+          color: context.glass.chip,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: const Icon(Icons.local_parking_rounded, color: glassTeal),
+        child: Icon(Icons.local_parking_rounded, color: context.glass.accent),
       ),
-      const SizedBox(width: 12),
+      const SizedBox(width: Space.m),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,7 +500,7 @@ class _ParkingScreenState extends State<ParkingScreen>
             ),
             Text(
               '$subtitle${space.level.isEmpty ? '' : ' · מפלס \u2066${space.level}\u2069'}',
-              style: const TextStyle(fontSize: 12, color: glassMuted),
+              style: TextStyle(fontSize: 12, color: context.glass.muted),
             ),
           ],
         ),
@@ -426,7 +514,7 @@ class _ParkingScreenState extends State<ParkingScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _spaceTitle(o.space, 'דירה ${o.apartment}'),
-        const SizedBox(height: 14),
+        const SizedBox(height: Space.l),
         Text(
           'מ־${parkingTime(o.startsAt)}\nעד ${parkingTime(o.endsAt)}',
           style: const TextStyle(fontWeight: FontWeight.w600, height: 1.7),
@@ -436,10 +524,10 @@ class _ParkingScreenState extends State<ParkingScreen>
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               o.space.notes,
-              style: const TextStyle(color: glassMuted),
+              style: TextStyle(color: context.glass.muted),
             ),
           ),
-        const SizedBox(height: 12),
+        const SizedBox(height: Space.m),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -504,6 +592,7 @@ class ParkingEditor extends StatefulWidget {
   final ParkingSpace? space;
 
   /// Edits the space itself instead of publishing a window for it.
+  /// Otherwise the editor shares a space, adding it first when it is new.
   final bool details;
   @override
   State<ParkingEditor> createState() => _ParkingEditorState();
@@ -511,31 +600,50 @@ class ParkingEditor extends StatefulWidget {
 
 class _ParkingEditorState extends State<ParkingEditor> {
   final form = GlobalKey<FormState>();
+
+  /// The household's spaces, to pick which one is being shared.
+  late final List<ParkingSpace> spaces = widget.model.snapshot.spaces;
+
+  /// The space being shared; null means a new one, typed in below.
+  late ParkingSpace? chosen =
+      widget.space ?? (spaces.isEmpty ? null : spaces.first);
+
+  /// Set once a new space was saved, so a retry after a failed publish
+  /// shares it instead of adding it twice.
+  String? createdId;
+
   late final label = TextEditingController(text: widget.space?.label ?? ''),
-      level = TextEditingController(text: widget.space?.level ?? ''),
-      notes = TextEditingController(text: widget.space?.notes ?? '');
-  bool get describing => widget.space == null || widget.details;
+      level = TextEditingController(text: chosen?.level ?? ''),
+      notes = TextEditingController(text: chosen?.notes ?? '');
+  bool get describing => widget.details;
 
-  /// 0 once, 1 every day for a week, 2 Sunday to Thursday for two weeks.
-  int repeat = 0;
+  void _choose(ParkingSpace? space) => setState(() {
+    chosen = space;
+    level.text = space?.level ?? '';
+    notes.text = space?.notes ?? '';
+    error = null;
+  });
 
-  // Calendar days, not 24-hour steps, so a clock change keeps the same hour.
-  List<ParkingWindow> _windows() {
-    DateTime shift(DateTime t, int days) =>
-        DateTime(t.year, t.month, t.day + days, t.hour, t.minute);
-    return [
-      for (var i = 0; i < const [1, 7, 14][repeat]; i++)
-        if (repeat != 2 ||
-            const {
-              DateTime.sunday,
-              DateTime.monday,
-              DateTime.tuesday,
-              DateTime.wednesday,
-              DateTime.thursday,
-            }.contains(shift(start, i).weekday))
-          (start: shift(start, i), end: shift(end, i)),
-    ];
-  }
+  /// false: one continuous stretch (start to end, may span days).
+  /// true: the same hours on chosen weekdays, for a number of weeks.
+  bool regular = false;
+  Set<int> days = {1, 2, 3, 4, 7};
+  TimeOfDay dailyFrom = const TimeOfDay(hour: 7, minute: 0);
+  TimeOfDay dailyTo = const TimeOfDay(hour: 14, minute: 0);
+  int weeks = 4;
+
+  /// Week counts on offer; 4 weeks of every day is 28 windows, under the
+  /// server's limit of 31 per publish.
+  static const weekChoices = {1: 'השבוע', 2: 'שבועיים', 4: 'חודש'};
+
+  List<ParkingWindow> _windows() => regularParkingWindows(
+    days: days,
+    from: dailyFrom,
+    to: dailyTo,
+    weeks: weeks,
+    now: DateTime.now(),
+  );
+
   late DateTime start = _initialStart();
   DateTime _initialStart() {
     final now = DateTime.now();
@@ -603,13 +711,48 @@ class _ParkingEditorState extends State<ParkingEditor> {
     });
   }
 
+  Future<void> _pickDaily(bool from) async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: from ? dailyFrom : dailyTo,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (time == null || !mounted) return;
+    setState(() => from ? dailyFrom = time : dailyTo = time);
+  }
+
+  String get _summary {
+    if (!regular) {
+      return 'פנויה מ${_dayAndTime(start)} עד ${_dayAndTime(end)}.';
+    }
+    final n = _windows().length;
+    return 'פנויה ב${days.length == 7 ? 'כל יום' : 'ימים ${parkingDaysLabel(days)}'}, '
+        'בין ${_clock(dailyFrom)} ל־${_clock(dailyTo)}, ${weekChoices[weeks] == 'השבוע' ? 'השבוע' : 'במשך ${weekChoices[weeks]}'} '
+        '(${n == 1 ? 'פעם אחת' : '$n פעמים'}).';
+  }
+
+  bool get _spaceDetailsChanged =>
+      chosen != null &&
+      (level.text.trim() != chosen!.level ||
+          notes.text.trim() != chosen!.notes);
+
   Future<void> _save() async {
     if (saving || !form.currentState!.validate()) return;
-    if (!describing && repeat != 0 && end.difference(start).inHours >= 24) {
-      setState(() => error = 'זמינות חוזרת מתאימה לטווח קצר מיממה.');
-      return;
+    if (!describing && regular) {
+      if (days.isEmpty) {
+        setState(() => error = 'יש לבחור לפחות יום אחד.');
+        return;
+      }
+      if (_windows().isEmpty) {
+        setState(() => error = 'אין מועד עתידי בטווח שבחרת.');
+        return;
+      }
     }
     if (!describing &&
+        !regular &&
         (!end.isAfter(start) ||
             !end.isAfter(DateTime.now()) ||
             start.isBefore(
@@ -625,23 +768,14 @@ class _ParkingEditorState extends State<ParkingEditor> {
       error = null;
     });
     final ok = await widget.model.run(
-      () => widget.space == null
-          ? widget.model.repository.addSpace(
-              widget.model.buildingId,
-              label.text,
-              level.text,
-              notes.text,
-            )
-          : widget.details
+      () => widget.details
           ? widget.model.repository.updateSpace(
               widget.space!.id,
               label.text,
               level.text,
               notes.text,
             )
-          : repeat == 0
-          ? widget.model.repository.publish(widget.space!.id, start, end)
-          : widget.model.repository.publishSeries(widget.space!.id, _windows()),
+          : _publish(),
     );
     if (!mounted) return;
     if (ok) {
@@ -654,6 +788,55 @@ class _ParkingEditorState extends State<ParkingEditor> {
     }
   }
 
+  /// One action: adds the space if it is new (or saves changed "where is
+  /// it" notes on an existing one), then publishes when it is free.
+  Future<void> _publish() async {
+    final repo = widget.model.repository;
+    final space = chosen;
+    final String id;
+    if (space != null) {
+      id = space.id;
+      if (_spaceDetailsChanged) {
+        await repo.updateSpace(id, space.label, level.text, notes.text);
+      }
+    } else {
+      id = createdId ??= await repo.addSpace(
+        widget.model.buildingId,
+        label.text,
+        level.text,
+        notes.text,
+      );
+    }
+    if (regular) {
+      await repo.publishSeries(id, _windows());
+    } else {
+      await repo.publish(id, start, end);
+    }
+  }
+
+  String get _spaceName => chosen?.label ?? label.text.trim();
+
+  Widget _step(int n, String title) => Padding(
+    padding: const EdgeInsets.only(bottom: Space.s),
+    child: Row(
+      children: [
+        CircleAvatar(
+          radius: 13,
+          backgroundColor: context.glass.chip,
+          foregroundColor: context.glass.accent,
+          child: Text(
+            '$n',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+        ),
+        const SizedBox(width: Space.s),
+        Expanded(
+          child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+        ),
+      ],
+    ),
+  );
+
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !saving,
@@ -665,21 +848,19 @@ class _ParkingEditorState extends State<ParkingEditor> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              widget.space == null
-                  ? 'החניה של הבית'
-                  : widget.details
+              widget.details
                   ? 'פרטי חניה ${widget.space!.label}'
-                  : 'משתפים את חניה ${widget.space!.label}',
+                  : 'שיתוף החניה שלי',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Space.s),
             Text(
-              widget.space == null
-                  ? 'החניה תשויך לדירה ${widget.apartment}. כל בני הבית יוכלו לנהל את השיתוף.'
-                  : 'השכנים יוכלו להזמין בחינם את כל הטווח שפרסמת, ללא אישור נוסף.',
-              style: const TextStyle(color: glassMuted),
+              widget.details
+                  ? 'החניה שייכת לדירה ${widget.apartment}. כל בני הבית יכולים לשתף אותה.'
+                  : 'שלושה צעדים קצרים, ושכן יוכל להזמין בלחיצה.',
+              style: TextStyle(color: context.glass.muted),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: Space.xxl),
             if (describing) ...[
               TextFormField(
                 key: const Key('parking-label'),
@@ -694,7 +875,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
                     ? 'יש להזין סימון חניה'
                     : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Space.m),
               TextFormField(
                 key: const Key('parking-level'),
                 controller: level,
@@ -705,7 +886,7 @@ class _ParkingEditorState extends State<ParkingEditor> {
                   hintText: 'למשל ‎-1',
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Space.m),
               TextFormField(
                 key: const Key('parking-notes'),
                 controller: notes,
@@ -718,57 +899,244 @@ class _ParkingEditorState extends State<ParkingEditor> {
                 ),
               ),
             ] else ...[
-              OutlinedButton.icon(
-                key: const Key('parking-start'),
-                onPressed: saving ? null : () => _pick(true),
-                icon: const Icon(Icons.event_available_outlined),
-                label: Text('פנויה מ־${parkingTime(start)}'),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                key: const Key('parking-end'),
-                onPressed: saving ? null : () => _pick(false),
-                icon: const Icon(Icons.schedule_rounded),
-                label: Text('עד ${parkingTime(end)}'),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  for (var i = 0; i < 3; i++)
+              _step(1, 'איזו חניה?'),
+              if (spaces.isNotEmpty && createdId == null)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final s in spaces)
+                      ChoiceChip(
+                        key: ValueKey('parking-pick-${s.id}'),
+                        selected: chosen?.id == s.id,
+                        onSelected: saving ? null : (_) => _choose(s),
+                        label: Text('חניה ${s.label}'),
+                      ),
                     ChoiceChip(
-                      key: ValueKey('parking-repeat-$i'),
-                      selected: repeat == i,
-                      onSelected: saving
+                      key: const Key('parking-pick-new'),
+                      selected: chosen == null,
+                      onSelected: saving ? null : (_) => _choose(null),
+                      label: const Text('חניה אחרת'),
+                    ),
+                  ],
+                ),
+              if (chosen == null) ...[
+                if (spaces.isNotEmpty) const SizedBox(height: Space.m),
+                TextFormField(
+                  key: const Key('parking-label'),
+                  controller: label,
+                  enabled: !saving && createdId == null,
+                  maxLength: 20,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'מספר החניה',
+                    hintText: 'למשל 42 או א׳־12',
+                  ),
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'יש להזין את מספר החניה'
+                      : null,
+                ),
+                Text(
+                  'נשמור אותה לדירה ${widget.apartment}, ובפעם הבאה רק בוחרים מתי.',
+                  style: TextStyle(color: context.glass.muted, fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: Space.xxl),
+              _step(2, 'מתי היא פנויה?'),
+              SegmentedButton<bool>(
+                key: const Key('parking-mode'),
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(
+                    value: false,
+                    icon: Icon(Icons.flight_takeoff_rounded),
+                    label: Text('ברצף'),
+                    tooltip: 'למשל: נוסע, פנויה מחמישי עד שלישי',
+                  ),
+                  ButtonSegment(
+                    value: true,
+                    icon: Icon(Icons.event_repeat_rounded),
+                    label: Text('בימים קבועים'),
+                    tooltip: 'למשל: בעבודה א׳–ה׳ 7:00–14:00',
+                  ),
+                ],
+                selected: {regular},
+                onSelectionChanged: saving
+                    ? null
+                    : (v) => setState(() {
+                        regular = v.first;
+                        error = null;
+                      }),
+              ),
+              const SizedBox(height: Space.m),
+              if (!regular) ...[
+                OutlinedButton.icon(
+                  key: const Key('parking-start'),
+                  onPressed: saving ? null : () => _pick(true),
+                  icon: const Icon(Icons.event_available_outlined),
+                  label: Text('מ${_dayAndTime(start)}'),
+                ),
+                const SizedBox(height: Space.s),
+                OutlinedButton.icon(
+                  key: const Key('parking-end'),
+                  onPressed: saving ? null : () => _pick(false),
+                  icon: const Icon(Icons.event_busy_outlined),
+                  label: Text('עד ${_dayAndTime(end)}'),
+                ),
+              ] else ...[
+                Text(
+                  'באילו ימים?',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: Space.xs),
+                Row(
+                  children: [
+                    for (final d in parkingWeekOrder)
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: _DayToggle(
+                            key: ValueKey('parking-day-$d'),
+                            letter: parkingDayLetters[d]!,
+                            name: parkingDayNames[d]!,
+                            selected: days.contains(d),
+                            onTap: saving
+                                ? null
+                                : () => setState(() {
+                                    days = {...days};
+                                    days.contains(d)
+                                        ? days.remove(d)
+                                        : days.add(d);
+                                  }),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                Wrap(
+                  spacing: 4,
+                  children: [
+                    TextButton(
+                      key: const Key('parking-days-workweek'),
+                      onPressed: saving
                           ? null
-                          : (_) => setState(() => repeat = i),
-                      label: Text(
-                        ['פעם אחת', 'כל יום, שבוע', 'א׳–ה׳, שבועיים'][i],
+                          : () => setState(() => days = {1, 2, 3, 4, 7}),
+                      child: const Text('א׳–ה׳'),
+                    ),
+                    TextButton(
+                      key: const Key('parking-days-all'),
+                      onPressed: saving
+                          ? null
+                          : () => setState(() => days = {...parkingWeekOrder}),
+                      child: const Text('כל יום'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Space.s),
+                Text(
+                  'באילו שעות?',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: Space.xs),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        key: const Key('parking-daily-from'),
+                        onPressed: saving ? null : () => _pickDaily(true),
+                        child: Text('מ־${_clock(dailyFrom)}'),
                       ),
                     ),
-                ],
+                    const SizedBox(width: Space.s),
+                    Expanded(
+                      child: OutlinedButton(
+                        key: const Key('parking-daily-to'),
+                        onPressed: saving ? null : () => _pickDaily(false),
+                        child: Text('עד ${_clock(dailyTo)}'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Space.m),
+                Text('לכמה זמן?', style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: Space.xs),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final e in weekChoices.entries)
+                      ChoiceChip(
+                        key: ValueKey('parking-weeks-${e.key}'),
+                        selected: weeks == e.key,
+                        onSelected: saving
+                            ? null
+                            : (_) => setState(() => weeks = e.key),
+                        label: Text(e.value),
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: Space.xxl),
+              _step(3, 'איפה היא? (לא חובה)'),
+              TextFormField(
+                key: const Key('parking-level'),
+                controller: level,
+                enabled: !saving,
+                maxLength: 20,
+                decoration: const InputDecoration(
+                  labelText: 'מפלס',
+                  hintText: 'למשל ‎-1',
+                ),
               ),
-              const SizedBox(height: 12),
-              const SoftTag(
-                'שיתוף בחינם · הזמנה לכל הטווח',
-                icon: Icons.favorite_border_rounded,
+              const SizedBox(height: Space.s),
+              TextFormField(
+                key: const Key('parking-notes'),
+                controller: notes,
+                enabled: !saving,
+                maxLength: 200,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'הערות לשכנים',
+                  hintText: 'למשל: שורה ג׳, ליד המעלית',
+                ),
+              ),
+              const SizedBox(height: Space.l),
+              GlassPanel(
+                key: const Key('parking-summary'),
+                tone: GlassTone.accent,
+                padding: const EdgeInsets.all(Space.l),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.local_parking_rounded,
+                      color: context.glass.accent,
+                    ),
+                    const SizedBox(width: Space.s),
+                    Expanded(
+                      child: Text(
+                        '${_spaceName.isEmpty ? 'החניה' : 'חניה $_spaceName'}: $_summary\nבחינם, וכל שכן יכול להזמין בלחיצה.',
+                        style: const TextStyle(height: 1.6),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
             if (error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
-                child: Text(error!, style: const TextStyle(color: glassError)),
+                child: Text(
+                  error!,
+                  style: TextStyle(color: context.glass.error),
+                ),
               ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Space.xxl),
             FilledButton(
               key: const Key('parking-save'),
               onPressed: saving ? null : _save,
               child: Text(
                 saving
                     ? 'שומרים…'
-                    : widget.space == null
-                    ? 'הוספת החניה'
                     : widget.details
                     ? 'שמירת הפרטים'
                     : 'פרסום לשכנים',
@@ -823,7 +1191,7 @@ class _ParkingPreviewRepository implements ParkingRepository {
     ],
   );
   @override
-  Future<void> addSpace(String b, String l, String level, String notes) async =>
+  Future<String> addSpace(String b, String l, String level, String n) async =>
       throw StateError('תצוגת עיצוב בלבד');
   @override
   Future<void> publish(String id, DateTime start, DateTime end) async =>
@@ -843,4 +1211,51 @@ class _ParkingPreviewRepository implements ParkingRepository {
       throw StateError('תצוגת עיצוב בלבד');
   @override
   Future<List<ParkingOffer>> history(String buildingId) async => const [];
+}
+
+/// One weekday in the "which days" row: a full-height toggle that screen
+/// readers announce by the day's full name.
+class _DayToggle extends StatelessWidget {
+  const _DayToggle({
+    super.key,
+    required this.letter,
+    required this.name,
+    required this.selected,
+    required this.onTap,
+  });
+  final String letter, name;
+  final bool selected;
+  final VoidCallback? onTap;
+  @override
+  Widget build(BuildContext context) {
+    final t = context.glass;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'יום $name',
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(Corners.chip),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? t.accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(Corners.chip),
+            border: Border.all(color: selected ? t.accent : t.rule),
+          ),
+          child: Text(
+            letter,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: selected ? t.onAccent : t.ink,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

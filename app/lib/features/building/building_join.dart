@@ -77,12 +77,12 @@ extension _JoinRequests on _BuildingExperienceState {
                     'עדכונים ובקשות',
                     style: Theme.of(ctx).textTheme.headlineMedium,
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  const SizedBox(height: Space.s),
+                  Text(
                     'הגישה לתוכן הבניין נפתחת רק אחרי האישורים הנדרשים.',
-                    style: TextStyle(color: glassMuted),
+                    style: TextStyle(color: context.glass.muted),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: Space.xl),
                   if (updates.isEmpty &&
                       notes.isEmpty &&
                       vm.pending.isEmpty &&
@@ -105,7 +105,7 @@ extension _JoinRequests on _BuildingExperienceState {
                             'התקבלת לבניין',
                             'ההצטרפות ל${update.buildingName} אושרה. ברוכים הבאים!',
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: Space.m),
                           TextButton.icon(
                             onPressed: vm.busy
                                 ? null
@@ -124,7 +124,7 @@ extension _JoinRequests on _BuildingExperienceState {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Space.m),
                   ],
                   for (final note in notes) ...[
                     GlassPanel(
@@ -136,19 +136,19 @@ extension _JoinRequests on _BuildingExperienceState {
                         },
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Space.m),
                   ],
                   if (vm.pending.isNotEmpty)
                     const SectionTitle('בקשות ההצטרפות שלי'),
                   for (final application in [...vm.pending, ...vm.inbox]) ...[
                     _pendingCard(application),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Space.m),
                     if (!vm.live)
                       const SoftTag(
                         'כלי בדיקה · הדמיית מנהלים',
                         icon: Icons.science_outlined,
                       ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Space.s),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -196,7 +196,7 @@ extension _JoinRequests on _BuildingExperienceState {
                         onPressed: vm.busy ? null : () => _reject(application),
                         child: const Text('דחיית הבקשה'),
                       ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: Space.xl),
                   ],
                 ],
               ),
@@ -218,24 +218,27 @@ extension _JoinRequests on _BuildingExperienceState {
         if (!a.mine)
           Text(
             a.applicantName,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: glassTeal,
+              color: context.glass.accent,
             ),
           ),
-        Text('דירה ${a.apartment}', style: const TextStyle(color: glassMuted)),
-        const SizedBox(height: 14),
+        Text(
+          'דירה ${a.apartment}',
+          style: TextStyle(color: context.glass.muted),
+        ),
+        const SizedBox(height: Space.l),
         _approvalLine('מנהל הבניין', a.buildingApproved),
         if (a.apartmentHasAdmin) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: Space.s),
           _approvalLine('מנהל הדירה', a.apartmentApproved),
         ] else ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: Space.s),
           Text(
             a.mine
                 ? 'דירה חדשה: לאחר אישור הבניין תהיה מנהל הדירה הראשון.'
                 : 'דירה חדשה: המצטרף הראשון יהפוך למנהל הדירה.',
-            style: TextStyle(fontSize: 12, color: glassMuted),
+            style: TextStyle(fontSize: 12, color: context.glass.muted),
           ),
         ],
       ],
@@ -247,14 +250,14 @@ extension _JoinRequests on _BuildingExperienceState {
       Icon(
         approved ? Icons.check_circle_outline : Icons.schedule_rounded,
         size: 18,
-        color: approved ? glassTeal : glassMuted,
+        color: approved ? context.glass.accent : context.glass.muted,
       ),
-      const SizedBox(width: 8),
+      const SizedBox(width: Space.s),
       Expanded(child: Text(label)),
       Text(
         approved ? 'אושר' : 'ממתין לאישור',
         style: TextStyle(
-          color: approved ? glassTeal : glassMuted,
+          color: approved ? context.glass.accent : context.glass.muted,
           fontSize: 12,
         ),
       ),
@@ -456,17 +459,17 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Eyebrow('מצטרפים לשכנים'),
-          const SizedBox(height: 8),
+          const SizedBox(height: Space.s),
           Text(
             'יש לך מקום כאן.',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
-          const SizedBox(height: 8),
-          const Text(
+          const SizedBox(height: Space.s),
+          Text(
             'מזינים את הקוד שקיבלת ממנהל הבניין.',
-            style: TextStyle(color: glassMuted),
+            style: TextStyle(color: context.glass.muted),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: Space.xxl),
           TextField(
             key: const Key('join-code'),
             controller: code,
@@ -485,21 +488,21 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
               _resetApartment();
             }),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Space.m),
           if (!widget.repository.isRemote)
-            const Text(
+            Text(
               'קוד לבדיקה: NEIGHBOR. בדירות 1, 2 ו־12 יש מנהל דירה.',
-              style: TextStyle(fontSize: 12, color: glassMuted),
+              style: TextStyle(fontSize: 12, color: context.glass.muted),
             ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Space.m),
           OutlinedButton(
             onPressed: submitting ? null : _checkCode,
             child: const Text('בדיקת הקוד'),
           ),
           if (submitError != null)
-            Text(submitError!, style: const TextStyle(color: glassError)),
+            Text(submitError!, style: TextStyle(color: context.glass.error)),
           if (found != null) ...[
-            const SizedBox(height: 18),
+            const SizedBox(height: Space.xl),
             GlassPanel(
               child: _FeatureLine(
                 Icons.apartment_rounded,
@@ -507,20 +510,20 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
                 found!.address,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: Space.xl),
             _apartmentField(
               apartment,
               key: const Key('join-apartment'),
               onChanged: (_) => _queueApartmentCheck(),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Space.m),
             if (checkingApartment)
-              const Text(
+              Text(
                 'בודקים את הדירה…',
-                style: TextStyle(color: glassMuted),
+                style: TextStyle(color: context.glass.muted),
               ),
             if (lookupError != null) ...[
-              Text(lookupError!, style: const TextStyle(color: glassError)),
+              Text(lookupError!, style: TextStyle(color: context.glass.error)),
               TextButton(
                 onPressed: _queueApartmentCheck,
                 child: const Text('בדיקת הדירה מחדש'),
@@ -541,7 +544,7 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
                 ),
               ),
               if (!status!.exists) ...[
-                const SizedBox(height: 14),
+                const SizedBox(height: Space.l),
                 _field(
                   household,
                   'שם הבית · לא חובה',
@@ -552,9 +555,9 @@ class _JoinFormState extends State<_JoinForm> with _AsyncForm<_JoinForm> {
                 ),
               ],
             ],
-            const SizedBox(height: 14),
+            const SizedBox(height: Space.l),
             _field(floor, 'קומה · לא חובה', '', required: false, maxLength: 20),
-            const SizedBox(height: 20),
+            const SizedBox(height: Space.xl),
             SizedBox(
               width: double.infinity,
               child: FilledButton(

@@ -3,6 +3,7 @@ import 'package:flutter/widget_previews.dart';
 
 import '../../data/building/building_repository.dart';
 import '../../data/building/supabase_building_repository.dart';
+import '../../app/appearance.dart';
 import 'glass_widgets.dart';
 
 @Preview(name: 'נייבור · עריכת פרופיל', size: Size(390, 700))
@@ -44,12 +45,13 @@ class AccountMenu extends StatelessWidget {
     key: const Key('account-menu'),
     tooltip: 'החשבון שלי',
     position: PopupMenuPosition.under,
-    color: const Color(0xFFF4FAFC),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
     onSelected: (value) {
       switch (value) {
         case 'profile':
           onProfile();
+        case 'appearance':
+          showAppearancePicker(context);
         case 'platform':
           onPlatform?.call();
         case 'sign-out':
@@ -61,7 +63,10 @@ class AccountMenu extends StatelessWidget {
         enabled: false,
         child: Text(
           profile.name.isEmpty ? 'החשבון שלי' : profile.name,
-          style: const TextStyle(color: glassInk, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            color: context.glass.ink,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       const PopupMenuDivider(),
@@ -71,6 +76,14 @@ class AccountMenu extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           leading: Icon(Icons.person_outline),
           title: Text('הפרופיל שלי'),
+        ),
+      ),
+      const PopupMenuItem(
+        value: 'appearance',
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.contrast_rounded),
+          title: Text('מראה: בהיר או כהה'),
         ),
       ),
       if (onPlatform != null)
@@ -94,8 +107,8 @@ class AccountMenu extends StatelessWidget {
     ],
     icon: CircleAvatar(
       radius: 21,
-      backgroundColor: const Color(0xFFD3ECEA),
-      foregroundColor: glassTeal,
+      backgroundColor: context.glass.chip,
+      foregroundColor: context.glass.accent,
       child: profile.name.isEmpty
           ? const Icon(Icons.person_outline_rounded)
           : Text(
@@ -162,19 +175,19 @@ class _ProfileEditorState extends State<ProfileEditor> {
             'הפרופיל שלי',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
-          const SizedBox(height: 8),
-          const Text(
+          const SizedBox(height: Space.s),
+          Text(
             'ככה השכנים יכירו אותך.',
-            style: TextStyle(color: glassMuted),
+            style: TextStyle(color: context.glass.muted),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: Space.xxl),
           if (widget.profile.email.isNotEmpty) ...[
             GlassPanel(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const Icon(Icons.mail_outline, color: glassTeal),
-                  const SizedBox(width: 12),
+                  Icon(Icons.mail_outline, color: context.glass.accent),
+                  const SizedBox(width: Space.m),
                   Expanded(
                     child: Text(
                       widget.profile.email,
@@ -184,7 +197,7 @@ class _ProfileEditorState extends State<ProfileEditor> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Space.l),
           ],
           TextFormField(
             key: const Key('profile-name'),
@@ -197,7 +210,7 @@ class _ProfileEditorState extends State<ProfileEditor> {
                 ? 'יש להזין שם באורך שני תווים לפחות'
                 : null,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Space.s),
           TextFormField(
             key: const Key('profile-phone'),
             controller: phone,
@@ -226,7 +239,7 @@ class _ProfileEditorState extends State<ProfileEditor> {
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Space.m),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -236,20 +249,80 @@ class _ProfileEditorState extends State<ProfileEditor> {
             ),
           ),
           if (widget.onDelete != null) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: Space.xl),
             const Divider(),
             TextButton.icon(
               key: const Key('account-delete'),
               onPressed: saving ? null : widget.onDelete,
-              style: TextButton.styleFrom(foregroundColor: glassError),
+              style: TextButton.styleFrom(foregroundColor: context.glass.error),
               icon: const Icon(Icons.delete_outline_rounded),
               label: const Text('מחיקת החשבון'),
             ),
-            const Text(
+            Text(
               'מוחק את הפרטים, החברות בבניינים והתוכן שכתבת.',
-              style: TextStyle(color: glassMuted, fontSize: 12),
+              style: TextStyle(color: context.glass.muted, fontSize: 12),
             ),
           ],
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> showAppearancePicker(BuildContext context) =>
+    showModalBottomSheet<void>(
+      context: context,
+      constraints: const BoxConstraints(maxWidth: 640),
+      builder: (_) => const AppearancePicker(),
+    );
+
+/// Light, dark, or follow the phone. Saved on this device.
+class AppearancePicker extends StatelessWidget {
+  const AppearancePicker({super.key});
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(Space.xl, 0, Space.xl, Space.xxl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('מראה', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: Space.xs),
+          Text(
+            'הבחירה נשמרת במכשיר הזה.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: Space.l),
+          ValueListenableBuilder(
+            valueListenable: appearance,
+            builder: (context, mode, _) => SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<ThemeMode>(
+                key: const Key('appearance-picker'),
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    icon: Icon(Icons.smartphone_rounded),
+                    label: Text('כמו בטלפון'),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.light,
+                    icon: Icon(Icons.light_mode_outlined),
+                    label: Text('בהיר'),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.dark,
+                    icon: Icon(Icons.dark_mode_outlined),
+                    label: Text('כהה'),
+                  ),
+                ],
+                selected: {mode},
+                onSelectionChanged: (s) => appearance.choose(s.first),
+              ),
+            ),
+          ),
         ],
       ),
     ),

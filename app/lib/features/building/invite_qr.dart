@@ -42,12 +42,12 @@ class InviteQrPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('הזמנה בסריקה', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 4),
-        const Text(
+        const SizedBox(height: Space.xs),
+        Text(
           'שכנים שסורקים את הקוד מגיעים ישר לבקשת הצטרפות. הגישה נפתחת רק אחרי אישור.',
-          style: TextStyle(fontSize: 12, color: glassMuted),
+          style: TextStyle(fontSize: 12, color: context.glass.muted),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: Space.l),
         Center(
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -58,7 +58,7 @@ class InviteQrPanel extends StatelessWidget {
             child: InviteQrCode(code: code),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: Space.m),
         Center(
           child: TextButton.icon(
             key: const Key('invite-qr-poster'),
@@ -91,91 +91,98 @@ class InvitePoster extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final link = inviteLink(code);
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    // Printed on paper: always the light look, whatever the app mode.
+    return Theme(
+      data: buildingTheme(),
+      child: Scaffold(
         backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        foregroundColor: glassInk,
-        title: const Text('מודעה ללוח בלובי'),
-        actions: [
-          IconButton(
-            tooltip: 'העתקת הקישור',
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: link));
-              if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('הקישור הועתק')));
-              }
-            },
-            icon: const Icon(Icons.copy_outlined),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, box) {
-            final qr = (box.biggest.shortestSide * .62).clamp(180.0, 420.0);
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: Column(
-                    children: [
-                      Text(
-                        'שכנים יקרים',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'הצטרפו ל״$name״ ב$appNameHebrew: לוח הבניין, בקשות בין שכנים ושיתוף חניות.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 24),
-                      InviteQrCode(code: code, size: qr),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'סורקים במצלמה של הטלפון ושולחים בקשת הצטרפות',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 15, color: glassInk),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'או מזינים באפליקציה את קוד הבניין',
-                        style: TextStyle(fontSize: 13, color: glassMuted),
-                      ),
-                      SelectableText(
-                        code,
-                        key: const Key('invite-poster-code'),
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 4,
-                          color: glassTeal,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Directionality(
-                        textDirection: TextDirection.ltr,
-                        child: SelectableText(
-                          link,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          foregroundColor: glassInk,
+          title: const Text('מודעה ללוח בלובי'),
+          actions: [
+            IconButton(
+              tooltip: 'העתקת הקישור',
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: link));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('הקישור הועתק')));
+                }
+              },
+              icon: const Icon(Icons.copy_outlined),
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final qr = (box.biggest.shortestSide * .62).clamp(180.0, 420.0);
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 28,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: Column(
+                      children: [
+                        Text(
+                          'שכנים יקרים',
                           textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        const SizedBox(height: Space.s),
+                        Text(
+                          'הצטרפו ל״$name״ ב$appNameHebrew: לוח הבניין, בקשות בין שכנים ושיתוף חניות.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: Space.xxl),
+                        InviteQrCode(code: code, size: qr),
+                        const SizedBox(height: Space.xl),
+                        const Text(
+                          'סורקים במצלמה של הטלפון ושולחים בקשת הצטרפות',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 15, color: glassInk),
+                        ),
+                        const SizedBox(height: Space.xl),
+                        const Text(
+                          'או מזינים באפליקציה את קוד הבניין',
+                          style: TextStyle(fontSize: 13, color: glassMuted),
+                        ),
+                        SelectableText(
+                          code,
+                          key: const Key('invite-poster-code'),
                           style: const TextStyle(
-                            fontSize: 12,
-                            color: glassMuted,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 4,
+                            color: glassTeal,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: Space.s),
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: SelectableText(
+                            link,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: glassMuted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

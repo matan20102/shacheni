@@ -117,11 +117,11 @@ class _PlatformConsoleState extends State<PlatformConsole> {
               listenable: vm,
               builder: (context, _) => Column(
                 children: [
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
                     child: Text(
                       'משתמשים, בניינים ובקשות · שינויים נשמרים ביומן',
-                      style: TextStyle(color: glassMuted),
+                      style: TextStyle(color: context.glass.muted),
                     ),
                   ),
                   SingleChildScrollView(
@@ -215,11 +215,11 @@ class _PlatformConsoleState extends State<PlatformConsole> {
                                       if (item.subtitle.isNotEmpty)
                                         SelectableText(
                                           item.subtitle,
-                                          style: const TextStyle(
-                                            color: glassMuted,
+                                          style: TextStyle(
+                                            color: context.glass.muted,
                                           ),
                                         ),
-                                      const SizedBox(height: 10),
+                                      const SizedBox(height: Space.m),
                                       for (final field in item.fields.entries)
                                         if (field.value.isNotEmpty)
                                           Padding(
@@ -342,7 +342,7 @@ class _ConsoleActionDialogState extends State<_ConsoleActionDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(widget.item.title),
-            const SizedBox(height: 10),
+            const SizedBox(height: Space.m),
             Text(switch (widget.action) {
               ConsoleAction.archive =>
                 'הבניין ייסגר לפעילות לכל הדיירים וההיסטוריה תישמר.',
@@ -350,7 +350,7 @@ class _ConsoleActionDialogState extends State<_ConsoleActionDialog> {
                 'הבניין יחזור לפעילות ולהצטרפות עם ההרשאות הקיימות.',
               ConsoleAction.approveBuilding => 'האישור הוא מטעם הבניין. בדירה עם מנהל נדרש גם אישור מנהל הדירה.',
             }),
-            const SizedBox(height: 16),
+            const SizedBox(height: Space.l),
             TextFormField(
               key: const Key('console-action-reason'),
               controller: reason,

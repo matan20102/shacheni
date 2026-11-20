@@ -95,11 +95,8 @@ class _BoardSearchState extends State<BoardSearch> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'חיפוש בלוח',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 12),
+          Text('חיפוש בלוח', style: Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: Space.m),
           TextField(
             key: const Key('board-search-query'),
             controller: query,
@@ -113,7 +110,7 @@ class _BoardSearchState extends State<BoardSearch> {
               counterText: '',
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Space.m),
           if (loading) const LinearProgressIndicator(minHeight: 2),
           if (error != null)
             Padding(
@@ -123,7 +120,7 @@ class _BoardSearchState extends State<BoardSearch> {
                   Expanded(
                     child: Text(
                       error!,
-                      style: const TextStyle(color: glassError),
+                      style: TextStyle(color: context.glass.error),
                     ),
                   ),
                   TextButton(
@@ -145,7 +142,7 @@ class _BoardSearchState extends State<BoardSearch> {
                           ? 'עוד אין פרסומים בלוח.'
                           : 'לא נמצאו פרסומים מתאימים.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: glassMuted),
+                      style: TextStyle(color: context.glass.muted),
                     ),
                   ),
                 for (final post in posts)
@@ -159,13 +156,13 @@ class _BoardSearchState extends State<BoardSearch> {
                         children: [
                           Text(
                             '${post.author} · דירה ${post.apartment} · ${_date(post.createdAt)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: glassTeal,
+                              color: context.glass.accent,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: Space.s),
                           Text(post.text),
                           for (final reply in post.replies)
                             Padding(
@@ -175,9 +172,9 @@ class _BoardSearchState extends State<BoardSearch> {
                               ),
                               child: Text(
                                 '${reply.mine ? 'אני' : reply.author}: ${reply.text}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
-                                  color: glassMuted,
+                                  color: context.glass.muted,
                                 ),
                               ),
                             ),

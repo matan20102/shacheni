@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/widget_previews.dart';
 
 import '../../data/building/building_repository.dart';
+import '../../app/appearance.dart';
 import '../../app/brand.dart';
 import '../../app/config.dart';
 import '../../data/building/supabase_building_repository.dart';
@@ -30,14 +32,19 @@ String _apartmentLabel(BuildingHome home) => 'דירה ${home.apartment}';
 class BuildingPreviewApp extends StatelessWidget {
   const BuildingPreviewApp({super.key});
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: '$appNameHebrew · $appNameEnglish',
-    debugShowCheckedModeBanner: false,
-    theme: buildingTheme(),
-    locale: const Locale('he'),
-    supportedLocales: const [Locale('he')],
-    localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    home: const BuildingExperience(),
+  Widget build(BuildContext context) => ValueListenableBuilder(
+    valueListenable: appearance,
+    builder: (context, mode, _) => MaterialApp(
+      title: '$appNameHebrew · $appNameEnglish',
+      debugShowCheckedModeBanner: false,
+      theme: buildingTheme(),
+      darkTheme: buildingTheme(Brightness.dark),
+      themeMode: mode,
+      locale: const Locale('he'),
+      supportedLocales: const [Locale('he')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      home: const BuildingExperience(),
+    ),
   );
 }
 
@@ -114,7 +121,24 @@ class _BuildingExperienceState extends State<BuildingExperience>
     }
   }
 
+  /// The floating tab bar narrows while the resident scrolls down.
+  final navCompact = ValueNotifier(false);
+  bool _onScroll(UserScrollNotification n) {
+    if (n.metrics.axis != Axis.vertical) return false;
+    final down = switch (n.direction) {
+      ScrollDirection.reverse => true,
+      ScrollDirection.forward => false,
+      ScrollDirection.idle => navCompact.value,
+    };
+    // The board is reversed (newest at the bottom): flip the sense there.
+    final reversed = n.metrics.axisDirection == AxisDirection.up;
+    navCompact.value = reversed ? !down : down;
+    return false;
+  }
+
   void _navigate(int value) {
+    if (value != vm.tab) HapticFeedback.selectionClick();
+    navCompact.value = false;
     vm.navigate(value);
     if (vm.live) _sync();
   }
@@ -122,6 +146,7 @@ class _BuildingExperienceState extends State<BuildingExperience>
   @override
   void dispose() {
     syncTimer?.cancel();
+    navCompact.dispose();
     WidgetsBinding.instance.removeObserver(this);
     if (widget.viewModel == null) vm.dispose();
     super.dispose();
@@ -152,17 +177,21 @@ class _BuildingExperienceState extends State<BuildingExperience>
               ),
               const SizedBox(height: 64),
               const Center(child: BuildingMark(size: 130)),
-              const SizedBox(height: 32),
+              const SizedBox(height: Space.xxxl),
               Text(
                 'בית אחד.\nהרבה שכנים טובים.',
                 style: Theme.of(context).textTheme.headlineLarge,
               ),
-              const SizedBox(height: 16),
-              const Text(
+              const SizedBox(height: Space.l),
+              Text(
                 'כל מה שקורה בבניין, במקום אחד פשוט.\nלהתעדכן, לעזור ולנהל את הבית יחד.',
-                style: TextStyle(fontSize: 17, height: 1.7, color: glassMuted),
+                style: TextStyle(
+                  fontSize: 17,
+                  height: 1.7,
+                  color: context.glass.muted,
+                ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: Space.xxxl),
               const GlassPanel(
                 child: Column(
                   children: [
@@ -171,13 +200,13 @@ class _BuildingExperienceState extends State<BuildingExperience>
                       'לוח אחד לכל הבניין',
                       'עדכונים קטנים, עזרה גדולה',
                     ),
-                    SizedBox(height: 18),
+                    SizedBox(height: Space.xl),
                     _FeatureLine(
                       Icons.home_outlined,
                       'הבית שלך במרכז',
                       'מידע ופניות הנוגעים לדירה שלך',
                     ),
-                    SizedBox(height: 18),
+                    SizedBox(height: Space.xl),
                     _FeatureLine(
                       Icons.people_outline,
                       'מנהלים יחד',
@@ -186,17 +215,21 @@ class _BuildingExperienceState extends State<BuildingExperience>
                   ],
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: Space.xxl),
               FilledButton.icon(
                 onPressed: vm.enter,
                 icon: const Icon(Icons.arrow_forward_rounded),
                 label: const Text('כניסה לבניין לדוגמה'),
               ),
-              const SizedBox(height: 12),
-              const Text(
+              const SizedBox(height: Space.m),
+              Text(
                 'נתוני הדגמה בלבד · השינויים נשמרים עד סגירת האפליקציה.\nכניסה עם Google זמינה כרגע בגרסה המחוברת הקיימת.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, height: 1.6, color: glassMuted),
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.6,
+                  color: context.glass.muted,
+                ),
               ),
             ],
           ),
@@ -227,33 +260,41 @@ class _BuildingExperienceState extends State<BuildingExperience>
               ],
             ),
           Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
-                child: switch (vm.tab) {
-                  0 => _home(),
-                  1 => _board(),
-                  2 =>
-                    vm.active == null
-                        ? _later(
-                            'חניה',
-                            'מקום קטן. עזרה גדולה.',
-                            Icons.local_parking_rounded,
-                            'מצטרפים לבניין כדי לשתף ולהזמין חניות עם השכנים.',
-                          )
-                        : ParkingScreen(
-                            key: ValueKey('parking-${vm.active!.id}'),
-                            repository: vm.repository.parking,
-                            buildingId: vm.active!.id,
-                            apartment: vm.active!.apartment,
-                          ),
-                  _ => _later(
-                    'ועד בית',
-                    'הבית שלנו, בניהול משותף.',
-                    Icons.account_balance_wallet_outlined,
-                    'כאן יופיעו קופת הבניין, ההוצאות והחיובים של הדירה שלך.\nמסלול הגבייה יתווסף בשלב הבא.',
+            child: NotificationListener<UserScrollNotification>(
+              onNotification: _onScroll,
+              child: TopFade(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: EnterTransition(
+                      key: ValueKey('tab-${vm.tab}'),
+                      child: switch (vm.tab) {
+                        0 => _home(),
+                        1 => _board(),
+                        2 =>
+                          vm.active == null
+                              ? _later(
+                                  'חניה',
+                                  'מקום קטן. עזרה גדולה.',
+                                  Icons.local_parking_rounded,
+                                  'מצטרפים לבניין כדי לשתף ולהזמין חניות עם השכנים.',
+                                )
+                              : ParkingScreen(
+                                  key: ValueKey('parking-${vm.active!.id}'),
+                                  repository: vm.repository.parking,
+                                  buildingId: vm.active!.id,
+                                  apartment: vm.active!.apartment,
+                                ),
+                        _ => _later(
+                          'ועד בית',
+                          'הבית שלנו, בניהול משותף.',
+                          Icons.account_balance_wallet_outlined,
+                          'כאן יופיעו קופת הבניין, ההוצאות והחיובים של הדירה שלך.\nמסלול הגבייה יתווסף בשלב הבא.',
+                        ),
+                      },
+                    ),
                   ),
-                },
+                ),
               ),
             ),
           ),
@@ -301,27 +342,13 @@ class _BuildingExperienceState extends State<BuildingExperience>
             ? null
             : SafeArea(
                 top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                  child: GlassPanel(
-                    padding: EdgeInsets.zero,
-                    radius: 28,
-                    opacity: .78,
-                    child: NavigationBar(
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      height: 74,
-                      selectedIndex: vm.tab,
-                      onDestinationSelected: _navigate,
-                      indicatorColor: glassTeal.withValues(alpha: .13),
-                      destinations: [
-                        for (final item in _navItems)
-                          NavigationDestination(
-                            icon: Icon(item.$2),
-                            label: item.$1,
-                          ),
-                      ],
-                    ),
+                child: ValueListenableBuilder(
+                  valueListenable: navCompact,
+                  builder: (context, compact, _) => FloatingNav(
+                    items: _navItems,
+                    selected: vm.tab,
+                    onSelect: _navigate,
+                    compact: compact,
                   ),
                 ),
               ),
@@ -352,8 +379,11 @@ class _BuildingExperienceState extends State<BuildingExperience>
                     radius: 22,
                     child: Row(
                       children: [
-                        const Icon(Icons.apartment_rounded, color: glassTeal),
-                        const SizedBox(width: 10),
+                        Icon(
+                          Icons.apartment_rounded,
+                          color: context.glass.accent,
+                        ),
+                        const SizedBox(width: Space.m),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,9 +408,9 @@ class _BuildingExperienceState extends State<BuildingExperience>
                                         if (vm.active!.householdName.isNotEmpty)
                                           vm.active!.householdName,
                                       ].join(' · '),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: glassMuted,
+                                  color: context.glass.muted,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -388,10 +418,10 @@ class _BuildingExperienceState extends State<BuildingExperience>
                             ],
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.unfold_more_rounded,
                           size: 19,
-                          color: glassMuted,
+                          color: context.glass.muted,
                         ),
                       ],
                     ),
@@ -399,27 +429,23 @@ class _BuildingExperienceState extends State<BuildingExperience>
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            Tooltip(
-              message: 'עדכונים ובקשות',
-              child: IconButton.filledTonal(
-                key: const Key('building-updates'),
-                onPressed: _applications,
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: .75),
+            const SizedBox(width: Space.m),
+            IconButton.filledTonal(
+              key: const Key('building-updates'),
+              tooltip: 'עדכונים ובקשות',
+              onPressed: _applications,
+              style: IconButton.styleFrom(
+                backgroundColor: context.glass.glassStrong,
+              ),
+              icon: Badge(
+                key: const Key('building-updates-badge'),
+                isLabelVisible: vm.notificationCount > 0,
+                label: Text(
+                  vm.notificationCount > 99 ? '99+' : '${vm.notificationCount}',
                 ),
-                icon: Badge(
-                  key: const Key('building-updates-badge'),
-                  isLabelVisible: vm.notificationCount > 0,
-                  label: Text(
-                    vm.notificationCount > 99
-                        ? '99+'
-                        : '${vm.notificationCount}',
-                  ),
-                  child: const Icon(
-                    Icons.notifications_none_rounded,
-                    color: glassInk,
-                  ),
+                child: Icon(
+                  Icons.notifications_none_rounded,
+                  color: context.glass.ink,
                 ),
               ),
             ),
@@ -445,50 +471,26 @@ class _BuildingExperienceState extends State<BuildingExperience>
     IconData icon,
     String description,
   ) => ListView(
-    padding: const EdgeInsets.all(24),
+    padding: const EdgeInsets.all(Space.xl),
     children: [
       Eyebrow(eyebrow),
-      const SizedBox(height: 10),
+      const SizedBox(height: Space.s),
       Text(title, style: Theme.of(context).textTheme.headlineMedium),
-      const SizedBox(height: 28),
-      GlassPanel(
-        child: Column(
-          children: [
-            Icon(icon, size: 64, color: glassTeal),
-            const SizedBox(height: 20),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, height: 1.8),
-            ),
-            const SizedBox(height: 20),
-            const SoftTag('בשלב הבא', icon: Icons.schedule_rounded),
-          ],
-        ),
+      const SizedBox(height: Space.xxl),
+      StateMessage(
+        icon: icon,
+        title: 'בקרוב',
+        text: description,
+        action: const SoftTag('בשלב הבא', icon: Icons.schedule_rounded),
       ),
     ],
   );
 
-  Widget _empty(String title, String text, VoidCallback action) => GlassPanel(
-    child: Column(
-      children: [
-        const Icon(Icons.forum_outlined, color: glassTeal, size: 42),
-        const SizedBox(height: 16),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: glassMuted),
-        ),
-        const SizedBox(height: 18),
-        FilledButton(onPressed: action, child: const Text('מתחילים כאן')),
-      ],
-    ),
+  Widget _empty(String title, String text, VoidCallback action) => StateMessage(
+    icon: Icons.forum_outlined,
+    title: title,
+    text: text,
+    action: FilledButton(onPressed: action, child: const Text('מתחילים כאן')),
   );
 
   Future<void> _sheet(Widget Function(BuildContext) builder) =>
