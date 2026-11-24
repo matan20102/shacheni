@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 
+import '../../app/crash_reporting.dart';
 import '../../data/building/platform_repository.dart';
 import '../../data/building/supabase_building_repository.dart';
 import 'glass_widgets.dart';
@@ -108,6 +109,27 @@ class _PlatformConsoleState extends State<PlatformConsole> {
       appBar: AppBar(
         title: const Text('ניהול המערכת'),
         backgroundColor: Colors.transparent,
+        actions: [
+          if (crashReportingEnabled)
+            IconButton(
+              key: const Key('console-crash-test'),
+              tooltip: 'שליחת דיווח בדיקה לניטור הקריסות',
+              icon: const Icon(Icons.bug_report_outlined),
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final sent = await sendCrashReportingTest();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      sent
+                          ? 'נשלח דיווח בדיקה. הוא יופיע ב־Sentry תוך דקה.'
+                          : 'הדיווח לא נשלח. כדאי לבדוק את SENTRY_DSN.',
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
       ),
       body: SafeArea(
         child: Center(
