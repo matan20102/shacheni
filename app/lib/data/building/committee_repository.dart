@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'building_error.dart';
+import 'inquiry_repository.dart';
 
 /// How the committee is paid: links it pasted once, and a note for cash.
 @immutable
@@ -173,6 +174,9 @@ abstract interface class CommitteeRepository {
     String? method,
   });
   Future<void> setMember(String memberId, bool onCommittee);
+
+  /// Private messages between residents and the committee.
+  InquiryRepository get inquiries;
 }
 
 DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -183,6 +187,8 @@ String _date(DateTime d) =>
 class SupabaseCommitteeRepository implements CommitteeRepository {
   SupabaseCommitteeRepository(this.client);
   final SupabaseClient client;
+  @override
+  late final InquiryRepository inquiries = SupabaseInquiryRepository(client);
   @override
   Future<CommitteeSnapshot> load(String buildingId) async =>
       CommitteeSnapshot.fromJson(
@@ -278,6 +284,12 @@ class LocalCommitteeRepository implements CommitteeRepository {
   final _charges = <String, List<_LocalCharge>>{};
   final _extraCommittee = <String, Set<String>>{};
   int _next = 0;
+  @override
+  late final LocalInquiryRepository inquiries = LocalInquiryRepository(
+    apartmentFor: apartmentFor,
+    isCommitteeFor: _boss,
+    name: name,
+  );
 
   String _apartment(String b) =>
       apartmentFor(b) ?? (throw StateError('אין גישה לבניין'));

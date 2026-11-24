@@ -132,7 +132,32 @@ extension _JoinRequests on _BuildingExperienceState {
                       child: Builder(
                         builder: (_) {
                           final view = _updateText(note);
-                          return _FeatureLine(view.icon, view.title, view.body);
+                          final line = _FeatureLine(
+                            view.icon,
+                            view.title,
+                            view.body,
+                          );
+                          if (!note.type.startsWith('committee.inquiry')) {
+                            return line;
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              line,
+                              const SizedBox(height: Space.m),
+                              TextButton.icon(
+                                key: ValueKey('update-inquiries-${note.id}'),
+                                onPressed: vm.busy
+                                    ? null
+                                    : () {
+                                        Navigator.pop(ctx);
+                                        unawaited(_openInquiries(note));
+                                      },
+                                icon: const Icon(Icons.forum_outlined),
+                                label: const Text('לפניות לוועד'),
+                              ),
+                            ],
+                          );
                         },
                       ),
                     ),
@@ -300,6 +325,21 @@ extension _JoinRequests on _BuildingExperienceState {
     await _perform(() => vm.repository.reject(a.id));
   }
 
+  Future<void> _openInquiries(BuildingUpdate note) async {
+    if (vm.active?.id != note.buildingId) {
+      await _perform(() => vm.select(note.buildingId), refresh: false);
+    }
+    if (!mounted || vm.active?.id != note.buildingId) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => InquiriesScreen(
+          repository: vm.repository.committee.inquiries,
+          buildingId: note.buildingId,
+        ),
+      ),
+    );
+  }
+
   ({IconData icon, String title, String body}) _updateText(BuildingUpdate u) {
     final when = u.startsAt == null ? '' : ' · ${parkingTime(u.startsAt!)}';
     final quote = u.text.isEmpty ? '' : '\n״${u.text}״';
@@ -340,6 +380,16 @@ extension _JoinRequests on _BuildingExperienceState {
         icon: Icons.local_parking_rounded,
         title: 'שיתוף החניה בוטל',
         body: 'חניה ${u.text}$when כבר אינה שמורה לך.',
+      ),
+      'committee.inquiry' => (
+        icon: Icons.mark_email_unread_outlined,
+        title: 'פנייה חדשה לוועד',
+        body: '${u.buildingName}$quote',
+      ),
+      'committee.inquiry_reply' => (
+        icon: Icons.mark_email_unread_outlined,
+        title: 'הוועד ענה לפנייה שלך',
+        body: '${u.buildingName}$quote',
       ),
       _ => (
         icon: Icons.notifications_none_rounded,
