@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Netlify build: install Flutter (pinned to the version used in development), then build the web
 # app with the Supabase settings from Netlify environment variables. Run from the repo root.
+# Crash reporting (app/lib/app/crash_reporting.dart) sends to Naybor's Sentry project by default.
+# The DSN is a public "send-only" address, not a secret. Set SENTRY_DSN in Netlify to override it,
+# or set it to an empty value to turn crash reporting off.
+NAYBOR_SENTRY_DSN="https://bb13c30050222881fce40decc68d563e@o4512487601143808.ingest.de.sentry.io/4512487615889488"
 set -euo pipefail
 
 FLUTTER_VERSION="3.47.7"
@@ -23,7 +27,9 @@ mkdir -p config
 cat > config/netlify.json <<EOF
 {
   "SUPABASE_URL": "$SUPABASE_URL",
-  "SUPABASE_PUBLISHABLE_KEY": "$SUPABASE_PUBLISHABLE_KEY"
+  "SUPABASE_PUBLISHABLE_KEY": "$SUPABASE_PUBLISHABLE_KEY",
+  "SENTRY_DSN": "${SENTRY_DSN-$NAYBOR_SENTRY_DSN}",
+  "SENTRY_ENVIRONMENT": "${SENTRY_ENVIRONMENT:-${CONTEXT:-production}}"
 }
 EOF
 flutter pub get

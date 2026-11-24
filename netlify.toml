@@ -1,6 +1,8 @@
 # Netlify builds the Flutter web app on every push to main (see netlify/build.sh).
 # Required environment variables (Netlify → Site configuration → Environment variables):
 #   SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY   — the same values as app/config/dev.json
+# Optional:
+#   SENTRY_DSN   — overrides the crash-reporting address in netlify/build.sh (empty = off)
 [build]
   command = "bash netlify/build.sh"
   publish = "app/build/web"
