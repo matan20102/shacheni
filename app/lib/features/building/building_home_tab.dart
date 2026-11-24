@@ -73,6 +73,21 @@ extension _HomeTab on _BuildingExperienceState {
             ],
           ),
         ),
+        if (vm.active != null)
+          MyHomeSummary(
+            key: ValueKey('my-home-${vm.active!.id}'),
+            committee: vm.repository.committee,
+            parking: vm.repository.parking,
+            buildingId: vm.active!.id,
+            posts: posts,
+            onCommittee: () => _navigate(3),
+            onParking: () => _navigate(2),
+            onPost: _conversation,
+            onCompose: () {
+              _navigate(1);
+              _compose();
+            },
+          ),
         const SectionTitle('מה עושים היום?'),
         LayoutBuilder(
           builder: (context, c) => Wrap(
