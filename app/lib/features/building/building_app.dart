@@ -19,6 +19,7 @@ import 'board_timeline.dart';
 import 'account_widgets.dart';
 import 'resident_directory.dart';
 import 'platform_console.dart';
+import 'committee_screen.dart';
 import 'parking_screen.dart';
 import 'post_images.dart';
 
@@ -285,12 +286,20 @@ class _BuildingExperienceState extends State<BuildingExperience>
                                   buildingId: vm.active!.id,
                                   apartment: vm.active!.apartment,
                                 ),
-                        _ => _later(
-                          'ועד בית',
-                          'הבית שלנו, בניהול משותף.',
-                          Icons.account_balance_wallet_outlined,
-                          'כאן יופיעו קופת הבניין, ההוצאות והחיובים של הדירה שלך.\nמסלול הגבייה יתווסף בשלב הבא.',
-                        ),
+                        _ =>
+                          vm.active == null
+                              ? _later(
+                                  'ועד בית',
+                                  'הבית שלנו, בניהול משותף.',
+                                  Icons.account_balance_wallet_outlined,
+                                  'מצטרפים לבניין כדי לראות את דמי הוועד והתשלומים של הבניין.',
+                                )
+                              : CommitteeScreen(
+                                  key: ValueKey('committee-${vm.active!.id}'),
+                                  repository: vm.repository.committee,
+                                  buildingId: vm.active!.id,
+                                  apartment: vm.active!.apartment,
+                                ),
                       },
                     ),
                   ),
