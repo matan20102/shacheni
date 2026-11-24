@@ -20,6 +20,7 @@ import 'board_timeline.dart';
 import 'account_widgets.dart';
 import 'resident_directory.dart';
 import 'platform_console.dart';
+import 'committee_inquiries.dart';
 import 'committee_screen.dart';
 import 'parking_screen.dart';
 import 'post_images.dart';

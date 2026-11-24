@@ -54,6 +54,8 @@ select t.ok('the committee sees it in the inbox, unread, with who wrote it',
   and (ba_inquiries(t.get('b')::uuid)->>'unread')::int=1);
 select t.ok('the committee got an update',exists(select 1 from notification where user_id='c3000000-0000-4000-8000-000000000001'
   and type='committee.inquiry' and entity_id=t.get('q')::uuid and read_at is null));
+select t.ok('the bell shows the subject to the committee, not the message',
+  (select n->>'text' from jsonb_array_elements(ba_state()->'notifications') n where n->>'type'='committee.inquiry')='Noise at night');
 select t.ok('opening shows the message',ba_inquiry(t.get('q')::uuid)->'messages'->0->>'body'='The neighbours above are loud after midnight.'
   and ba_inquiry(t.get('q')::uuid)->>'side'='committee');
 select t.ok('opening marks it read',(ba_inquiries(t.get('b')::uuid)->>'unread')::int=0
@@ -67,6 +69,8 @@ select t.as_user('c3000000-0000-4000-8000-000000000002');
 select t.ok('the author sees the answer as unread and handled',(ba_inquiries(t.get('b')::uuid)->'mine'->0->>'unread')::boolean
   and ba_inquiries(t.get('b')::uuid)->'mine'->0->>'status'='handled'
   and ba_inquiries(t.get('b')::uuid)->'mine'->0->>'preview'='Thanks, we will talk to them.');
+select t.ok('the bell tells the author the committee answered',
+  (select n->>'text' from jsonb_array_elements(ba_state()->'notifications') n where n->>'type'='committee.inquiry_reply')='Noise at night');
 select t.ok('the answer is signed by the committee, not the member',
   ba_inquiry(t.get('q')::uuid)->'messages'->1->>'name'='הוועד'
   and (ba_inquiry(t.get('q')::uuid)->'messages'->1->>'from_committee')::boolean);
@@ -100,6 +104,8 @@ select ba_inquiry_open(t.get('b')::uuid,'Four','x'); select ba_inquiry_open(t.ge
 select t.throws('five inquiries a day at most',$$select ba_inquiry_open(t.get('b')::uuid,'Six','x')$$,'TRY_LATER');
 select ba_delete_account();
 select t.as_user('c3000000-0000-4000-8000-000000000001');
+select t.ok('a deleted inquiry leaves nothing in the bell',
+  not exists(select 1 from jsonb_array_elements(ba_state()->'notifications') n where n->>'type' like 'committee.inquiry%'));
 select t.ok('a deleted account takes its inquiries with it',jsonb_array_length(ba_inquiries(t.get('b')::uuid)->'inbox')=0);
 select t.as_admin();
 select t.ok('and their messages',(select count(*) from committee_inquiry_message where building_id=t.get('b')::uuid)=0);
