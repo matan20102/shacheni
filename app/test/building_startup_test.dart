@@ -122,7 +122,14 @@ void main() {
     await tester.pump();
     legalResponse.complete();
     await finishLoading(tester);
-    expect(calls, ['my_pending_legal_documents', 'ba_state', 'ba_board']);
+    // The home tab's personal area then reads dues and parking once each.
+    expect(calls, [
+      'my_pending_legal_documents',
+      'ba_state',
+      'ba_board',
+      'ba_committee',
+      'ba_parking',
+    ]);
     expect(find.text('הבית המחובר'), findsWidgets);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     await tester.pumpWidget(const SizedBox());

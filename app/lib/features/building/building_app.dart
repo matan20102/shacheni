@@ -13,6 +13,7 @@ import '../../app/config.dart';
 import '../../data/building/supabase_building_repository.dart';
 import 'glass_widgets.dart';
 import 'invite_qr.dart';
+import 'my_home.dart';
 import 'address_picker.dart';
 import 'board_search.dart';
 import 'board_timeline.dart';
