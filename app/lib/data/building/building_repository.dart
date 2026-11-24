@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'committee_repository.dart';
 import 'parking_repository.dart';
 import 'local_parking_repository.dart';
 
@@ -93,24 +94,21 @@ class BuildingHome {
 
   BuildingHome withHouseholdName(String value) =>
       copyWith(householdName: value);
-  BuildingHome copyWith({
-    String? householdName,
-    bool? isAdmin,
-    String? code,
-  }) => BuildingHome(
-    id: id,
-    name: name,
-    address: address,
-    code: code ?? this.code,
-    openReports: openReports,
-    apartment: apartment,
-    entrances: entrances,
-    isAdmin: isAdmin ?? this.isAdmin,
-    isCommittee: isCommittee,
-    isApartmentAdmin: isApartmentAdmin,
-    householdName: householdName ?? this.householdName,
-    entrance: entrance,
-  );
+  BuildingHome copyWith({String? householdName, bool? isAdmin, String? code}) =>
+      BuildingHome(
+        id: id,
+        name: name,
+        address: address,
+        code: code ?? this.code,
+        openReports: openReports,
+        apartment: apartment,
+        entrances: entrances,
+        isAdmin: isAdmin ?? this.isAdmin,
+        isCommittee: isCommittee,
+        isApartmentAdmin: isApartmentAdmin,
+        householdName: householdName ?? this.householdName,
+        entrance: entrance,
+      );
 }
 
 @immutable
@@ -303,6 +301,7 @@ class JoinApplication {
 
 abstract class BuildingRepository {
   ParkingRepository get parking;
+  CommitteeRepository get committee;
   bool get isPlatformAdmin;
   PlatformRepository? get platform;
   Future<List<ResidentMember>> residents(String buildingId);
@@ -393,6 +392,13 @@ class LocalBuildingRepository implements BuildingRepository {
   late final ParkingRepository parking = LocalParkingRepository(
     apartmentFor: (id) =>
         _homes.where((h) => h.id == id).firstOrNull?.apartment,
+  );
+  @override
+  late final CommitteeRepository committee = LocalCommitteeRepository(
+    apartmentFor: (id) =>
+        _homes.where((h) => h.id == id).firstOrNull?.apartment,
+    isAdminFor: (id) =>
+        _homes.where((h) => h.id == id).firstOrNull?.isAdmin ?? false,
   );
   @override
   bool get isPlatformAdmin => false;
@@ -541,7 +547,8 @@ class LocalBuildingRepository implements BuildingRepository {
   String rotateCode(BuildingHome home) {
     final index = _homes.indexWhere((h) => h.id == home.id);
     if (index < 0 || !_homes[index].isAdmin) throw StateError('אין הרשאה');
-    final code = 'SH${_id('code').hashCode.abs().toRadixString(36).toUpperCase()}';
+    final code =
+        'SH${_id('code').hashCode.abs().toRadixString(36).toUpperCase()}';
     _homes[index] = _homes[index].copyWith(code: code);
     return code;
   }
@@ -607,7 +614,9 @@ class LocalBuildingRepository implements BuildingRepository {
     if (reply?.mine ?? post.mine) {
       throw StateError('אי אפשר לדווח על תוכן שכתבת.');
     }
-    if (replyId == null ? !_hiddenPosts.add(postId) : !_hiddenReplies.add(replyId)) {
+    if (replyId == null
+        ? !_hiddenPosts.add(postId)
+        : !_hiddenReplies.add(replyId)) {
       return;
     }
     _reports.add(
@@ -629,7 +638,8 @@ class LocalBuildingRepository implements BuildingRepository {
     if (home == null || !home.isAdmin) throw StateError('אין הרשאה');
     return List.unmodifiable(
       _reports.where(
-        (r) => _posts.any((p) => p.id == r.postId && p.buildingId == buildingId),
+        (r) =>
+            _posts.any((p) => p.id == r.postId && p.buildingId == buildingId),
       ),
     );
   }
@@ -667,13 +677,17 @@ class LocalBuildingRepository implements BuildingRepository {
   }) async {
     const size = 30;
     final q = query.trim().toLowerCase();
-    final matches = posts(buildingId).where(
-      (p) =>
-          (before == null || p.createdAt.isBefore(before)) &&
-          (q.isEmpty ||
-              p.text.toLowerCase().contains(q) ||
-              p.replies.any((r) => r.text.toLowerCase().contains(q))),
-    ).toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final matches =
+        posts(buildingId)
+            .where(
+              (p) =>
+                  (before == null || p.createdAt.isBefore(before)) &&
+                  (q.isEmpty ||
+                      p.text.toLowerCase().contains(q) ||
+                      p.replies.any((r) => r.text.toLowerCase().contains(q))),
+            )
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return BoardPage(
       List.unmodifiable(matches.take(size)),
       hasMore: matches.length > size,
@@ -1128,10 +1142,7 @@ class BuildingViewModel extends ChangeNotifier {
     olderError = null;
     _notify();
     try {
-      final page = await repository.boardPage(
-        id,
-        before: shown.last.createdAt,
-      );
+      final page = await repository.boardPage(id, before: shown.last.createdAt);
       _older[id] = [...?_older[id], ...page.posts];
       _olderHasMore[id] = page.hasMore;
     } catch (error) {

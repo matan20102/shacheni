@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'building_repository.dart';
 import 'platform_repository.dart';
+import 'committee_repository.dart';
 import 'parking_repository.dart';
 export 'building_error.dart' show buildingErrorMessage;
 
@@ -17,6 +18,10 @@ class SupabaseBuildingRepository implements BuildingRepository {
   final bool realtime;
   @override
   late final ParkingRepository parking = SupabaseParkingRepository(client);
+  @override
+  late final CommitteeRepository committee = SupabaseCommitteeRepository(
+    client,
+  );
   @override
   bool isPlatformAdmin = false;
   @override
@@ -473,14 +478,15 @@ class SupabaseBuildingRepository implements BuildingRepository {
     params: {'p_reply': replyId, 'p_action': 'delete'},
   );
   @override
-  Future<void> report(
-    String postId, {
-    String? replyId,
-    String reason = '',
-  }) => client.rpc(
-    'ba_report',
-    params: {'p_post': postId, 'p_reply': replyId, 'p_reason': reason.trim()},
-  );
+  Future<void> report(String postId, {String? replyId, String reason = ''}) =>
+      client.rpc(
+        'ba_report',
+        params: {
+          'p_post': postId,
+          'p_reply': replyId,
+          'p_reason': reason.trim(),
+        },
+      );
   @override
   Future<List<BoardReport>> reports(String buildingId) async =>
       List.unmodifiable([
