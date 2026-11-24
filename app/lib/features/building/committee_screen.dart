@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/building/committee_repository.dart';
+import 'committee_inquiries.dart';
 import 'glass_widgets.dart';
 
 const _months = [
@@ -240,6 +241,11 @@ class _CommitteeScreenState extends State<CommitteeScreen> {
                 ],
               ),
             ],
+            const SizedBox(height: Space.l),
+            InquiriesEntry(
+              repository: widget.repository.inquiries,
+              buildingId: widget.buildingId,
+            ),
             const SizedBox(height: Space.xl),
             if (model.loading || model.saving)
               const Padding(
